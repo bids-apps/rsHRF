@@ -5,7 +5,7 @@ import numpy as np
 import warnings
 from rsHRF import spm_dep, fourD_rsHRF
 
-__version__ = "0.1.7"
+__version__ = "0.2.8"
 
 def get_parser():
     parser = ArgumentParser(description='retrieves the onsets of pseudo-events triggering a '
@@ -24,6 +24,8 @@ def get_parser():
 
     parser.add_argument('output_dir', action='store', type=op.abspath,
                         help='the output path for the outcomes of processing')
+
+    parser.add_argument('-v', '--version', action='version', version='rsHRF version {}'.format(__version__))
 
     parser.add_argument('analysis_level', help='Level of the analysis that will be performed. '
                         'Multiple participant level analyses can be run independently '
