@@ -35,7 +35,7 @@ The demos allow you to run the analyses on several formats of input data.
 
 Python Package and BIDS-app 
 -------------
-A BIDS-App has been made for easy reproducible analysis. It's documentation can be accessed at:
+A BIDS-App has been made for easy and reproducible analysis. Its documentation can be accessed at:
 
 http://bids-apps.neuroimaging.io/rsHRF/
 
