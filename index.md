@@ -173,4 +173,4 @@ lies in the ``input_dir`` directory. The associated mask files also lie within t
 The analysis level is ``participant``. The analysis is performed only for ``sub-001`` & ``sub-002``
 out of all the available subjects in the BIDS dataset.
 
-###
+### Fin.
