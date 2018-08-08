@@ -16,7 +16,7 @@ Running ``rsHRF`` after installing as a Python Package OR running ``docker run -
 ----
 In essence, the whole usage of the application can be broken down to 7 major steps:
 
-1. **The input:**
+**The input:**
 
  There are 2 ways one can input data to this application.
 
@@ -29,7 +29,7 @@ In essence, the whole usage of the application can be broken down to 7 major ste
  Out of the above 2 options, one of them is always required and both cannot be supplied
  at once.
 
-2. **The mask / atlas files:**
+**The mask / atlas files:**
 
  There are 2 ways one can supply the corresponding mask / atlas files.
 
@@ -58,13 +58,13 @@ In essence, the whole usage of the application can be broken down to 7 major ste
  The application then pairs the input_files with their corresponding masks provided that
  the 2 files share a common prefix.
 
-3. **The output directory:** 
+**The output directory:** 
 
  The output directory ``output_dir`` is the folder under which all the resulting
  ``.nii`` files will be stored. The application further makes folders for each of 
  the participants / subjects if the input is supplied through the argument ``bids_dir``.
 
-4. **The Analysis Level:**
+**The Analysis Level:**
 
  There are 2 kinds of analysis that can be performed.
 
@@ -75,7 +75,7 @@ In essence, the whole usage of the application can be broken down to 7 major ste
 
  * ``group`` : Coming Soon! - Use ``participant`` for now.
 
-5. **The Analysis Method:** 
+**The Analysis Method:** 
 
  The analysis can be carried out using 3 estimation methods.
 
@@ -84,13 +84,13 @@ In essence, the whole usage of the application can be broken down to 7 major ste
  One of them needs to be supplied using the ``--estimation`` argument followed by
  one of the above 3 choices.
 
-6. **The input parameters:** 
+**The input parameters:** 
 
  There are many input parameters that can be supplied to customize the analysis.
  Please see all of them under the ``Parameters`` heading under the documentation
  by running ``rsHRF --help``.
 
-7. **The participant labels:**
+**The participant labels:**
 
  Specifying which subjects to perform the analysis on can be given as a space separated
  list after specifying the ``--participant_label`` argument. Only the valid subjects
