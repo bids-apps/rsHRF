@@ -4,11 +4,8 @@ import sys
 from setuptools import setup, find_packages
 from setuptools.command.install import install
 
-VERSION = re.search(
-    '^__version__\s*=\s*"(.*)"',
-    open('rsHRF/CLI.py').read(),
-    re.M
-).group(1)
+with open("VERSION", "r") as fh:
+    VERSION = fh.read().strip('\n')
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
