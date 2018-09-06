@@ -27,7 +27,7 @@ def knee_pt(y, x=None):
                 print('knee_pt: y and x must have the same dimensions')
                 return res_x, idx_of_result
             if y.size < 3:
-                print('knee_pt: y must be at least 3 elements long')
+                res_x, idx_of_result = np.min(y), np.argmin(y)
                 return res_x, idx_of_result
             if np.all(np.diff(x) >= 0) and (not x_was_none):
                 idx = np.argsort(x)
