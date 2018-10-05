@@ -5,7 +5,7 @@ import numpy as np
 import warnings
 from rsHRF import spm_dep, fourD_rsHRF
 
-with open("VERSION", "r") as fh:
+with open(op.join(op.dirname(op.realpath(__file__)), "VERSION"), "r") as fh:
     __version__ = fh.read().strip('\n')
 
 def get_parser():

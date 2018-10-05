@@ -4,7 +4,7 @@ import sys
 from setuptools import setup, find_packages
 from setuptools.command.install import install
 
-with open("VERSION", "r") as fh:
+with open("rsHRF/VERSION", "r") as fh:
     VERSION = fh.read().strip('\n')
 
 with open("README.md", "r") as fh:
@@ -36,12 +36,13 @@ setup(
     long_description_content_type="text/markdown",
     author="Madhur Tandon",
     author_email="madhurtandon23@gmail.com",
-    url="https://github.com/guorongwu/rsHRF",
+    url="https://github.com/BIDS-Apps/rsHRF",
     classifiers=(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ),
+    include_package_data=True,
     zip_safe=False,
     python_requires=">=3.5",
     install_requires=["numpy>=1.14,<1.15", "nibabel", "matplotlib", "scipy", "pybids", "pandas", "patsy", "duecredit",
