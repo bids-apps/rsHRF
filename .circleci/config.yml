@@ -53,8 +53,8 @@ jobs:
       - run:
           name: Build and push Docker image
           command: |
-            docker build -t bids/rshrf:latest -t bids/rshrf:$CIRCLE_TAG .
             docker login -u $DOCKER_USER -p $DOCKER_PASS
+            docker build -t bids/rshrf:latest -t bids/rshrf:$CIRCLE_TAG .
             docker push bids/rshrf:latest
             docker push bids/rshrf:$CIRCLE_TAG
 
