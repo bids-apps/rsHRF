@@ -62,28 +62,31 @@ def get_parser():
                             default=[0.01, 0.08],
                             help='set intervals for bandpass filter, default is 0.01 - 0.08')
 
-    group_para.add_argument('-T', action='store', type=float, nargs=1, default=3,
+    group_para.add_argument('-TR', action='store', type=float, default=-1,
+                            help='set TR parameter')
+
+    group_para.add_argument('-T', action='store', type=float, default=3,
                             help='set T parameter')
 
-    group_para.add_argument('-T0', action='store', type=float, nargs=1, default=3,
+    group_para.add_argument('-T0', action='store', type=float, default=3,
                             help='set T0 parameter')
 
-    group_para.add_argument('-TD_DD', action='store', type=int, nargs=1, default=2,
+    group_para.add_argument('-TD_DD', action='store', type=int, default=2,
                             help='set TD_DD parameter')
 
-    group_para.add_argument('-AR_lag', action='store', type=float, nargs=1, default=1,
+    group_para.add_argument('-AR_lag', action='store', type=float, default=1,
                             help='set AR_lag parameter')
 
-    group_para.add_argument('--thr', action='store', type=float, nargs=1, default=1,
+    group_para.add_argument('--thr', action='store', type=float, default=1,
                             help='set thr parameter')
 
-    group_para.add_argument('--len', action='store', type=int, nargs=1, default=24,
+    group_para.add_argument('--len', action='store', type=int, default=24,
                             help='set len parameter')
 
-    group_para.add_argument('--min_onset_search', action='store', type=int, nargs=1, default=4,
+    group_para.add_argument('--min_onset_search', action='store', type=int, default=4,
                             help='set min_onset_search parameter')
 
-    group_para.add_argument('--max_onset_search', action='store', type=int, nargs=1, default=8,
+    group_para.add_argument('--max_onset_search', action='store', type=int, default=8,
                             help='set max_onset_search parameter')
 
     return parser
@@ -123,7 +126,15 @@ def run_rsHRF():
     if args.input_file is not None and args.atlas is not None:
         # carry analysis with input_file and atlas
         TR = spm_dep.spm.spm_vol(args.input_file).header.get_zooms()[-1]
-        para['TR'] = TR
+        if TR <= 0:
+            if para['TR'] <= 0:
+                parser.error('Please supply a valid TR using -TR argument')
+        else:
+            if para['TR'] == -1:
+                para['TR'] = TR
+            elif para['TR'] <= 0:
+                print('Invalid TR supplied, using implicit TR: {0}'.format(TR))
+                para['TR'] = TR
         para['dt'] = para['TR'] / para['T']
         para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
                                 np.fix(para['max_onset_search'] / para['dt']) + 1,
