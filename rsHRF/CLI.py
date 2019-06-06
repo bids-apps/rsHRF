@@ -26,6 +26,9 @@ def get_parser():
     parser.add_argument('output_dir', action='store', type=op.abspath,
                         help='the output path for the outcomes of processing')
 
+    parser.add_argument('--n_jobs', action='store', type=int, default=-1,
+                        help='the number of parallel processing elements')
+
     parser.add_argument('-v', '--version', action='version', version='rsHRF version {}'.format(__version__))
 
     parser.add_argument('analysis_level', help='Level of the analysis that will be performed. '
@@ -139,7 +142,7 @@ def run_rsHRF():
         para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
                                 np.fix(para['max_onset_search'] / para['dt']) + 1,
                                 dtype='int')
-        fourD_rsHRF.demo_4d_rsHRF(args.input_file, args.atlas, args.output_dir, para, mode='input w/ atlas')
+        fourD_rsHRF.demo_4d_rsHRF(args.input_file, args.atlas, args.output_dir, para, args.n_jobs, mode='input w/ atlas')
 
     if args.bids_dir is not None and args.atlas is not None:
         # carry analysis with bids_dir and 1 atlas
@@ -172,7 +175,7 @@ def run_rsHRF():
                 para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
                                         np.fix(para['max_onset_search'] / para['dt']) + 1,
                                         dtype='int')
-                fourD_rsHRF.demo_4d_rsHRF(all_inputs[file_count], args.atlas, args.output_dir, para, mode='bids w/ atlas')
+                fourD_rsHRF.demo_4d_rsHRF(all_inputs[file_count], args.atlas, args.output_dir, para, args.n_jobs, mode='bids w/ atlas')
 
     if args.bids_dir is not None and args.brainmask:
         # carry analysis with bids_dir and brainmask
@@ -235,7 +238,7 @@ def run_rsHRF():
                 para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
                                         np.fix(para['max_onset_search'] / para['dt']) + 1,
                                         dtype='int')
-                fourD_rsHRF.demo_4d_rsHRF(all_inputs[file_count], all_masks[file_count], args.output_dir, para, mode='bids')
+                fourD_rsHRF.demo_4d_rsHRF(all_inputs[file_count], all_masks[file_count], args.output_dir, para, args.n_jobs, mode='bids')
 
 
 def main():

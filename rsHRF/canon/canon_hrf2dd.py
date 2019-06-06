@@ -12,7 +12,7 @@ from ..processing import knee
 
 warnings.filterwarnings("ignore")
 
-def wgr_rshrf_estimation_canonhrf2dd_par2(data, xBF, temporal_mask):
+def wgr_rshrf_estimation_canonhrf2dd_par2(data, xBF, temporal_mask, p_jobs):
     N, nvar = data.shape
     bf = wgr_spm_get_canonhrf(xBF)
     bf2 = wgr_spm_Volterra(bf, xBF)
@@ -26,7 +26,7 @@ def wgr_rshrf_estimation_canonhrf2dd_par2(data, xBF, temporal_mask):
     dump(data, data_folder)
     data = load(data_folder, mmap_mode='r')
 
-    results = Parallel(n_jobs=-1)(delayed(wgr_hrf_estimation_canon)(data, i, xBF, length,
+    results = Parallel(n_jobs=p_jobs)(delayed(wgr_hrf_estimation_canon)(data, i, xBF, length,
                                   N, bf, temporal_mask) for i in range(nvar))
 
     beta_hrf, event_bold = zip(*results)

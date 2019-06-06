@@ -158,7 +158,7 @@ def Fit_sFIR2(tc, TR, Runs, T, mode):
     return hrf, e
 
 
-def wgr_rsHRF_FIR(data, para, temporal_mask):
+def wgr_rsHRF_FIR(data, para, temporal_mask, p_jobs):
     para['temporal_mask'] = temporal_mask
     N, nvar = data.shape
     if np.count_nonzero(para['thr']) == 1:
@@ -169,7 +169,7 @@ def wgr_rsHRF_FIR(data, para, temporal_mask):
     dump(data, data_folder)
     data = load(data_folder, mmap_mode='r')
 
-    results = Parallel(n_jobs=-1)(delayed(wgr_FIR_estimation_HRF)(data, i, para, N) for i in range(0, nvar))
+    results = Parallel(n_jobs=p_jobs)(delayed(wgr_FIR_estimation_HRF)(data, i, para, N) for i in range(0, nvar))
     beta_rshrf, event_bold = zip(*results)
 
     try:

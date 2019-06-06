@@ -12,7 +12,7 @@ from rsHRF import spm_dep, processing, canon, sFIR, parameters
 warnings.filterwarnings("ignore")
 
 
-def demo_4d_rsHRF(input_file, mask_file, output_dir, para, mode='bids'):
+def demo_4d_rsHRF(input_file, mask_file, output_dir, para, p_jobs, mode='bids'):
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
 
@@ -57,14 +57,14 @@ def demo_4d_rsHRF(input_file, mask_file, output_dir, para, mode='bids'):
         if 'canon' in para['estimation']:
             beta_hrf, bf, event_bold = \
                 canon.canon_hrf2dd.wgr_rshrf_estimation_canonhrf2dd_par2(
-                    bold_sig, para, temporal_mask
+                    bold_sig, para, temporal_mask, p_jobs
                 )
             hrfa = np.dot(bf, beta_hrf[np.arange(0, bf.shape[1]), :])
         elif 'FIR' in para['estimation']:
             para['T'] = 1
             hrfa, event_bold = sFIR. \
                 smooth_fir. \
-                wgr_rsHRF_FIR(bold_sig, para, temporal_mask)
+                wgr_rsHRF_FIR(bold_sig, para, temporal_mask, p_jobs)
 
         nvar = hrfa.shape[1]
         PARA = np.zeros((3, nvar))
