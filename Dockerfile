@@ -22,7 +22,7 @@ RUN apk add --no-cache libpng freetype libstdc++ openblas libxml2 libxslt && \
 	    libxslt-dev && \
 	ln -s /usr/include/locale.h /usr/include/xlocale.h \
 	&& pip3 install numpy \
-	&& pip3 install scipy \
+	&& pip3 install scipy==1.3.3 \
 	&& pip3 install pandas \
 	&& pip3 install matplotlib \
 	&& pip3 install joblib \
