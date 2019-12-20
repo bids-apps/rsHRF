@@ -45,8 +45,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     python_requires=">=3.5",
-    install_requires=["numpy>=1.14,<1.15", "nibabel", "matplotlib", "scipy", "pybids", "pandas", "patsy", "duecredit",
-                      "joblib"],
+    install_requires=["numpy", "nibabel", "matplotlib", "scipy", "pybids", "pandas", "patsy", "duecredit", "joblib"],
     cmdclass={
         'verify': VerifyVersionCommand,
     },

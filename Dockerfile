@@ -21,11 +21,6 @@ RUN apk add --no-cache libpng freetype libstdc++ openblas libxml2 libxslt && \
 	    libxml2-dev \
 	    libxslt-dev && \
 	ln -s /usr/include/locale.h /usr/include/xlocale.h \
-	&& pip3 install numpy \
-	&& pip3 install scipy \
-	&& pip3 install pandas \
-	&& pip3 install matplotlib \
-	&& pip3 install joblib \
 	&& pip3 install rsHRF \
 	&& rm -r /root/.cache \
 	&& find /usr/lib/python3.*/ -name 'tests' -exec rm -r '{}' + \
