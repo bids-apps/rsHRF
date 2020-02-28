@@ -1,8 +1,13 @@
 import nibabel as nib
 import numpy as np
 from scipy.special import gammaln
+from joblib import Parallel, delayed
+from joblib import load, dump
 import warnings
-
+import math
+import tempfile
+import os
+from rsHRF import canon
 warnings.filterwarnings("ignore")
 
 def spm_vol(input_nii_file):
@@ -143,6 +148,72 @@ def spm_write_vol(image_volume_info, image_voxels, image_name):
     affine = image_volume_info.affine
     image_volume_info = nib.Nifti1Image(data, affine)
     nib.save(image_volume_info, image_name)
+
+def spm_fourier_bf(pst,estimation,h):
+    """
+    Returns Fourier (Hanning) basis functions
+
+    """
+    if estimation == "hanning":
+        g = (1 - np.cos(2*math.pi*pst)) / 2
+    else:
+        g = np.ones(len(pst))
+
+    bf = [g];
+    for i in range(1,h+1):
+        bf.append(np.multiply(g, np.sin(i*2*math.pi*pst)))
+        bf.append(np.multiply(g, np.cos(i*2*math.pi*pst)))
+
+    return np.array(bf).transpose()
+
+def spm_gamma_bf(u,h):
+    """
+    Returns Gamma basis functions
+    """
+    _spm_Gpdf = lambda x, h, l: \
+        np.exp(h * np.log(l) + (h - 1) * np.log(x) - (l * x) - gammaln(h))
+    bf    = []
+    for i in range(2,  h + 2):
+        m   = np.power(2, i)
+        s   = np.sqrt(m)
+        bf.append(_spm_Gpdf(u,np.power((m/s),2),m/np.power(s,2)))
+    return np.array(bf).transpose()
+
+def wgr_spm_get_bf(bold_sig, para, temporal_mask, p_jobs, estimation):
+    N, nvar = bold_sig.shape
+    dt = para['dt'] # 'time bin for basis functions {secs}';
+    l  = para['len']
+
+    if estimation == "gamma":
+        pst = np.arange(0,l+0.01,dt) #the 0.01 is because the rounding is different between python and matlab
+        bf = spm_gamma_bf(pst,para['order'])
+    elif estimation == "fourier" or estimation == "hanning":
+        pst = np.arange(0,l,dt)
+        pst = pst/max(pst)
+        bf = spm_fourier_bf(pst,estimation,para['order'])
+
+
+    bf = spm_orth(np.asarray(bf))
+
+    length = para['len']
+    folder = tempfile.mkdtemp()
+    data_folder = os.path.join(folder, 'data')
+    dump(bold_sig, data_folder)
+
+    data = load(data_folder, mmap_mode='r')
+
+
+    results = Parallel(n_jobs=p_jobs)(delayed(canon.canon_hrf2dd.wgr_hrf_estimation_canon)(data, i, para, length,
+                                  N, bf, temporal_mask) for i in range(nvar))
+
+    beta_hrf, event_bold = zip(*results)
+
+    try:
+        shutil.rmtree(folder)
+    except:
+        print("Failed to delete: " + folder)
+
+    return np.array(beta_hrf).T, bf, np.array(event_bold)
 
 
 def spm_get_bf(xBF):

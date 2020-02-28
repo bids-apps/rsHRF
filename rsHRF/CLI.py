@@ -55,7 +55,7 @@ def get_parser():
     group_para = parser.add_argument_group('Parameters')
 
     group_para.add_argument('--estimation', action='store',
-                            choices=['canon2dd', 'sFIR', 'FIR'], required=True,
+                            choices=['canon2dd', 'sFIR', 'FIR', 'fourier', 'hanning', 'gamma'], required=True,
                             help='Choose the estimation procedure from '
                                  'canon2dd (canonical shape with 2 derivatives), '
                                  'sFIR (smoothed Finite Impulse Response) , '
@@ -82,6 +82,12 @@ def get_parser():
 
     group_para.add_argument('--thr', action='store', type=float, default=1,
                             help='set thr parameter')
+
+    group_para.add_argument('--order', action='store', type=int, default=3,
+                            help='set the number of basis vectors')
+
+    parser.add_argument('--ar', dest='ar', action='store_true',
+                            help='enable autocorrelated noise modeling in the (s)FIR model')
 
     group_para.add_argument('--len', action='store', type=int, default=24,
                             help='set len parameter')
@@ -138,6 +144,7 @@ def run_rsHRF():
             elif para['TR'] <= 0:
                 print('Invalid TR supplied, using implicit TR: {0}'.format(TR))
                 para['TR'] = TR
+        para['AR'] = args.ar
         para['dt'] = para['TR'] / para['T']
         para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
                                 np.fix(para['max_onset_search'] / para['dt']) + 1,
@@ -170,6 +177,7 @@ def run_rsHRF():
                     TR = layout.get_metadata(all_inputs[file_count].filename)['RepetitionTime']
                 except KeyError as e:
                     TR = spm_dep.spm.spm_vol(all_inputs[file_count].filename).header.get_zooms()[-1]
+                para['AR'] = args.ar
                 para['TR'] = TR
                 para['dt'] = para['TR'] / para['T']
                 para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
@@ -233,6 +241,7 @@ def run_rsHRF():
                     TR = layout.get_metadata(all_inputs[file_count].filename)['RepetitionTime']
                 except KeyError as e:
                     TR = spm_dep.spm.spm_vol(all_inputs[file_count].filename).header.get_zooms()[-1]
+                para['AR'] = args.ar
                 para['TR'] = TR
                 para['dt'] = para['TR'] / para['T']
                 para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
