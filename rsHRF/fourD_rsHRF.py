@@ -7,7 +7,7 @@ from scipy import stats, signal
 from scipy.sparse import lil_matrix
 import scipy.io as sio
 import warnings
-from rsHRF import spm_dep, processing, canon, sFIR, parameters
+from rsHRF import spm_dep, processing, canon, sFIR, parameters, basis_functions
 
 warnings.filterwarnings("ignore")
 
@@ -54,19 +54,14 @@ def demo_4d_rsHRF(input_file, mask_file, output_dir, para, p_jobs, mode='bids'):
 
         print('Retrieving HRF ...')
 
-        if 'canon' in para['estimation']:
-            beta_hrf, bf, event_bold = \
-                canon.canon_hrf2dd.wgr_rshrf_estimation_canonhrf2dd_par2(
-                    bold_sig, para, temporal_mask, p_jobs
-                )
-            hrfa = np.dot(bf, beta_hrf[np.arange(0, bf.shape[1]), :])
-        elif 'FIR' in para['estimation']:
+        if 'FIR' in para['estimation']:
             para['T'] = 1
             hrfa, event_bold = sFIR. \
                 smooth_fir. \
                 wgr_rsHRF_FIR(bold_sig, para, temporal_mask, p_jobs)
-        elif 'fourier' in para['estimation'] or 'hanning' in para['estimation'] or 'gamma' in para['estimation']:
-            beta_hrf, bf, event_bold = spm_dep.spm.wgr_spm_get_bf(bold_sig, para, temporal_mask, p_jobs, para['estimation'])
+        else :
+            basis_functions.basis_functions.compute_basis_function(bold_sig, para, temporal_mask, p_jobs)
+            beta_hrf, bf, event_bold = basis_functions.basis_functions.compute_basis_function(bold_sig, para, temporal_mask, p_jobs, para['estimation'])
             hrfa = np.dot(bf, beta_hrf[np.arange(0, bf.shape[1]), :])
 
         nvar = hrfa.shape[1]

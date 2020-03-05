@@ -9,181 +9,206 @@ import os
 import warnings
 from ..spm_dep import spm
 from ..processing import knee
+from rsHRF import basis_functions
 
 warnings.filterwarnings("ignore")
 
-def wgr_rshrf_estimation_canonhrf2dd_par2(data, xBF, temporal_mask, p_jobs):
-    N, nvar = data.shape
-    bf = wgr_spm_get_canonhrf(xBF)
-    bf2 = wgr_spm_Volterra(bf, xBF)
-    if bf2 != []:
-        bf = np.column_stack((bf, bf2))
 
-    length = xBF['len']
+def tor_make_deconv_mtx3(sf, tp, eres):
+    docenter = 0
+    if type(sf) is not dict:
+        sf2 = {}
+        for i in range(0, sf.shape[1]):
+            sf2[i] = sf[:, i]
+        sf = sf2
+    if type(tp) is int:
+        tp = np.tile(tp, (1, len(sf)))
+    if len(tp) != len(sf):
+        print('timepoints vectors (tp) and \
+        stick function (sf) lengths do not match!')
+        return
+    tbefore = 0
+    nsess = len(sf)
+
+    numtrs = int(np.around(np.amax(sf[0].shape) / eres))
+    myzeros = np.zeros((numtrs, 1))
+    DX = np.zeros((numtrs, 1))
+
+    for i in range(0, len(sf)):
+        Snumtrs = np.amax(sf[i].shape) / eres
+        if(Snumtrs != np.round(Snumtrs)):
+            print('length not evenly divisible by eres')
+        if(numtrs != Snumtrs):
+            print('different length than sf[0]')
+
+        inums = np.nonzero(sf[i] > 0)[0]
+        inums = inums / eres
+        inums = np.ceil(inums).astype(int)
+        sf[i] = np.ravel(myzeros)
+        sf[i][inums] = 1
+
+    index = 0
+    for i in range(0, len(sf)):
+        if tbefore != 0:
+            for j in range(tbefore - 1, -1, -1):
+                sf_temp = sf[i][j:]
+                sf_temp = sf_temp[:, np.newaxis]
+                mysf = np.concatenate((sf_temp, np.zeros((j, 1))))
+                if index == 0:
+                    DX[:, index] = np.ravel(mysf)
+                else:
+                    DX = np.column_stack((DX, mysf))
+                index += 1
+
+        if index == 0:
+            DX[:, index] = sf[i]
+        else:
+            DX = np.column_stack((DX, sf[i]))
+
+        index += 1
+        inums = np.nonzero(sf[i] == 1)[0]
+
+        for j in range(1, np.ravel(tp)[i]):
+            myzeros = np.zeros((numtrs, 1))
+            inums = inums + 1
+            reg = myzeros
+            inums = inums[inums < numtrs]
+            reg[inums] = 1
+            while (np.amax(reg.shape) < DX.shape[0]):
+                reg = np.concatenate((reg, np.zeros(1, 1)))
+            DX = np.column_stack((DX, reg))
+            index += 1
+
+    if nsess < 2:
+        DX = np.column_stack((DX, np.ones((DX.shape[0], 1))))
+    else:
+        X = np.zeros((DX.shape[0], 1))
+        index = 0
+        scanlen = DX.shape[0] / nsess
+        if np.around(scanlen) != scanlen:
+            print('Model length is not an even multiple of scan length.')
+        for startimg in range(0, DX.shape[0], int(np.around(scanlen))):
+            if index == 0:
+                X[startimg:startimg + int(np.around(scanlen)), index] = 1
+            else:
+                X_temp = np.zeros((DX.shape[0], 1))
+                X_temp[startimg:startimg + int(np.around(scanlen)), 0] = 1
+                X = np.column_stack((X, X_temp))
+            index += 1
+        DX = np.column_stack((DX, X))
+
+    if docenter:
+        wh = np.arange(1, DX.shape[1] - nsess + 1)
+        DX[:, wh] = DX[:, wh] - np.tile(np.mean(DX[:, wh]), (DX.shape[0], 1))
+    return DX, sf
+
+
+def Fit_sFIR2(tc, TR, Runs, T, mode, ARlag):
+    DX, sf = tor_make_deconv_mtx3(Runs, T, 1)
+    DX2 = DX[:, 0:T]
+    num = T
+
+    if mode == 1:
+        C = np.arange(1, num + 1).reshape((1, num)).conj().T\
+            .dot(np.ones((1, num)))
+        h = np.sqrt(1 / (7 / TR))
+
+        v = 0.1
+        sig = 1
+
+        R = v * np.exp(-h / 2 * (C - C.conj().T) ** 2)
+        RI = np.linalg.inv(R)
+
+        sMRI = sig**2*RI
+        #sMRI = np.zeros((num+1,num+1))
+        #sMRI[:-1,:-1] = sMRI0
+
+        if ARlag == 1:
+            b = np.linalg.solve((DX2.conj().T.dot(DX2) + sig ** 2 * RI),
+                                DX2.conj().T).dot(tc)
+            e = tc - DX2.dot(b)
+        else:
+            e, b = wgr_glsco(DX2,tc,sMRI,AR_lag=ARlag)
+
+    elif mode == 0:
+        b = np.linalg.pinv(DX).dot(tc)
+        if ARlag == 1:
+            e = tc - DX.dot(b)
+            b = b[0:T]
+        else:
+            e, b = wgr_glsco(DX2,tc,[],AR_lag=ARlag)
+
+    hrf = b
+
+    return hrf, e
+
+
+def wgr_rsHRF_FIR(data, para, temporal_mask, p_jobs):
+    para['temporal_mask'] = temporal_mask
+    N, nvar = data.shape
+    if np.count_nonzero(para['thr']) == 1:
+        para['thr'] = np.array([para['thr'], np.inf])
 
     folder = tempfile.mkdtemp()
     data_folder = os.path.join(folder, 'data')
     dump(data, data_folder)
     data = load(data_folder, mmap_mode='r')
-
-    results = Parallel(n_jobs=p_jobs)(delayed(wgr_hrf_estimation_canon)(data, i, xBF, length,
-                                  N, bf, temporal_mask) for i in range(nvar))
-
-    beta_hrf, event_bold = zip(*results)
+    results = Parallel(n_jobs=p_jobs)(delayed(wgr_FIR_estimation_HRF)(data, i, para, N) for i in range(0, nvar))
+    beta_rshrf, event_bold = zip(*results)
 
     try:
         shutil.rmtree(folder)
     except:
         print("Failed to delete: " + folder)
 
-    return np.array(beta_hrf).T, bf, np.array(event_bold)
+    return np.array(beta_rshrf).T, np.array(event_bold)
 
 
-def wgr_spm_Volterra(bf, xBF):
-    bf2 = []
-    if 'Volterra' in xBF:
-        if xBF['Volterra'] == 2:
-            bf2 = []
-            for p in range(bf.shape[1]):
-                for q in range(bf.shape[1]):
-                    bf2.append((bf[:, p] * bf[:, q]))
-            bf2 = np.array(bf2).T
-            bf2 = spm.spm_orth(bf2)
-    return bf2
-
-
-def wgr_spm_get_canonhrf(xBF):
-    dt = xBF['dt']
-    fMRI_T = xBF['T']
-
-    bf = spm.spm_hrf(dt, P=None, fMRI_T=fMRI_T)
-    p = np.array([6, 16, 1, 1, 6, 0, 32], dtype=float)
-    p[len(p) - 1] = xBF['len']
-
-    bf = spm.spm_hrf(dt, p, fMRI_T)
-    bf = bf[:, np.newaxis]
-
-    if xBF['TD_DD']:
-        dp = 1
-        p[5] = p[5] + dp
-        D = (bf[:, 0] - spm.spm_hrf(dt, p, fMRI_T)) / dp
-        D = D[:, np.newaxis]
-        bf = np.append(bf, D, axis=1)
-        p[5] = p[5] - dp
-        if xBF['TD_DD'] == 2:
-            dp = 0.01
-            p[2] = p[2] + dp
-            D = (bf[:, 0] - spm.spm_hrf(dt, p, fMRI_T)) / dp
-            D = D[:, np.newaxis]
-            bf = np.append(bf, D, axis=1)
-
-    bf = spm.spm_orth(bf)
-    return bf
-
-
-def wgr_hrf_estimation_canon(data, i, xBF, length, N, bf, temporal_mask):
-    """
-    Estimate HRF
-    """
+def wgr_FIR_estimation_HRF(data, i, para, N):
+    if para['estimation'] == 'sFIR':
+        firmode = 1
+    else:
+        firmode = 0
     dat = data[:, i]
-    thr = xBF['thr']
-    if 'localK' not in xBF:
-        if xBF['TR']<=2:
+
+    if 'localK' not in para:
+        if para['TR']<=2:
             localK = 1
         else:
             localK = 2
     else:
-        localK = xBF['localK']
-    u0 = wgr_BOLD_event_vector(N, dat, thr, localK, temporal_mask)
-    u = np.append(u0.toarray(), np.zeros((xBF['T'] - 1, N)), axis=0)
-    u = np.reshape(u, (1, - 1), order='F')
-    beta, lag = wgr_hrf_fit(dat, length, xBF, u, N, bf)
-    beta_hrf = beta
-    beta_hrf = np.append(beta_hrf, lag)
-    return beta_hrf, u0.toarray()[0].nonzero()[0]
+        localK = para['localK']
 
+    u = basis_functions.basis_functions.wgr_BOLD_event_vector(N, dat, para['thr'], localK, para['temporal_mask'])
+    u = u.toarray().flatten(1).ravel().nonzero()[0]
 
-def wgr_BOLD_event_vector(N, matrix, thr, k, temporal_mask):
-    """
-    Detect BOLD event.
-    event > thr & event < 3.1
-    """
-    data = lil_matrix((1, N))
-    matrix = matrix[:, np.newaxis]
-    if 0 in np.array(temporal_mask).shape:
-        matrix = stats.zscore(matrix, ddof=1)
-        matrix = np.nan_to_num(matrix)
-        for t in range(1 + k, N - k + 1):
-            if matrix[t - 1, 0] > thr and \
-                    np.all(matrix[t - k - 1:t - 1, 0] < matrix[t - 1, 0]) and \
-                    np.all(matrix[t - 1, 0] > matrix[t:t + k, 0]):
-                data[0, t - 1] = 1
-    else:
-        datm = np.mean(matrix[temporal_mask])
-        datstd = np.std(matrix[temporal_mask])
-        datstd[datstd == 0] = 1
-        matrix = np.divide((matrix - datm), datstd)
-        for t in range(1 + k, N - k + 1):
-            if temporal_mask[t-1]:
-                if matrix[t - 1, 0] > thr and \
-                        np.all(matrix[t - k - 1:t - 1, 0] < matrix[t - 1, 0]) and \
-                        np.all(matrix[t - 1, 0] > matrix[t:t + k, 0]):
-                    data[0, t - 1] = 1
-    return data
+    lag = para['lag']
+    nlag = np.amax(lag.shape)
+    len_bin = int(np.floor(para['len'] / para['TR']))
 
+    hrf = np.zeros((len_bin, nlag))
 
-def wgr_hrf_fit(dat, length, xBF, u, N, bf):
-    """
-    @u    - BOLD event vector (microtime).
-    @nlag - time lag from neural event to BOLD event
-    """
-    lag = xBF['lag']
-    AR_lag = xBF['AR_lag']
-    nlag = len(lag)
-    erm = np.zeros((1, nlag))
-    beta = np.zeros((bf.shape[1] + 1, nlag))
-    for i in range(nlag):
-        u_lag = np.append(u[0, lag[i]:], np.zeros((1, lag[i]))).T
-        erm[0, i], beta[:, i] = \
-            wgr_glm_estimation(dat, u_lag, bf, xBF['T'], xBF['T0'], AR_lag)
+    Cov_E = np.zeros((1, nlag))
+    kk = 0
 
-    x, idx = knee.knee_pt(np.ravel(erm))
-    return beta[:, idx], lag[idx]
+    for i_lag in range(1, nlag + 1):
+        RR = u - i_lag
+        RR = RR[RR >= 0]
+        if RR.size != 0:
+            design = np.zeros((N, 1))
+            design[RR] = 1
+            hrf_kk, e3 = Fit_sFIR2(dat, para['TR'], design, len_bin, firmode,para['AR_lag'])
+            hrf[:, kk] = np.ravel(hrf_kk)
+            Cov_E[:, kk] = np.cov(np.ravel(e3))
+        else:
+            Cov_E[:, kk] = np.inf
+        kk += 1
 
+    placeholder, ind = knee.knee_pt(np.ravel(Cov_E))
+    rsH = hrf[:, ind + 1]
+    return rsH, u
 
-def wgr_glm_estimation(dat, u, bf, T, T0, AR_lag):
-    """
-    @u - BOLD event vector (microtime).
-    """
-    nscans = dat.shape[0]
-    x = wgr_onset_design(u, bf, T, T0, nscans)
-    X = np.append(x, np.ones((nscans, 1)), axis=1)
-    res_sum, Beta = wgr_glsco(X, dat, AR_lag)
-    return np.real(res_sum), Beta
-
-
-def wgr_onset_design(u, bf, T, T0, nscans):
-    """
-    @u - BOLD event vector (microtime).
-    @bf - basis set matrix
-    @T - microtime resolution (number of time bins per scan)
-    @T0 - microtime onset (reference time bin, see slice timing)
-    """
-    ind = np.arange(0, max(u.shape))
-    X = np.empty((0, len(ind)))
-    for p in range(bf.shape[1]):
-        x = np.convolve(u, bf[:, p])
-        x = x[ind]
-        X = np.append(X, [x], axis=0)
-    X = X.T
-    """
-    Resample regressors at acquisition times
-    """
-    X = X[(np.arange(0, nscans) * T) + (T0 - 1), :]
-    return X
-
-
-def wgr_glsco(X, Y, AR_lag=1, max_iter=20):
+def wgr_glsco(X, Y, sMRI, AR_lag=1, max_iter=20):
     """
     Linear regression when disturbance terms follow AR(p)
     -----------------------------------
@@ -204,7 +229,12 @@ def wgr_glsco(X, Y, AR_lag=1, max_iter=20):
     Beta = estimator corresponding to the k regressors
     """
     nobs, nvar = X.shape
-    Beta = np.linalg.lstsq(X, Y, rcond=None)[0]
+
+    if sMRI == []:
+        Beta = np.linalg.lstsq(X, Y, rcond=None)[0]
+    else:
+        Beta = np.linalg.lstsq((np.matmul(X.T,X) + sMRI),np.matmul(X.T,Y))[0]
+
     resid = Y - (X.dot(Beta))
 
     if AR_lag == 0:
@@ -212,7 +242,9 @@ def wgr_glsco(X, Y, AR_lag=1, max_iter=20):
         return res_sum, Beta
 
     max_tol = min(1e-6, max(np.absolute(Beta)) / 1000)
+
     for r in range(max_iter):
+
         Beta_temp = Beta
         X_AR = np.zeros((nobs - (2 * AR_lag), AR_lag))
 
@@ -230,10 +262,13 @@ def wgr_glsco(X, Y, AR_lag=1, max_iter=20):
                 X_main - (AR_para[m] * (X[AR_lag - m - 1:nobs - m - 1, :]))
             Y_main = Y_main - (AR_para[m] * (Y[AR_lag - m - 1:nobs - m - 1]))
 
-        Beta = np.linalg.lstsq(X_main, Y_main, rcond=None)[0]
+        if sMRI == []:
+            Beta = np.linalg.lstsq(X_main, Y_main, rcond=None)[0]
+        else:
+            Beta = np.linalg.lstsq((np.matmul(X_main.T,X_main) + sMRI),np.matmul(X_main.T,Y_main))[0]
+
         resid = Y[AR_lag:nobs] - X[AR_lag:nobs, :].dot(Beta)
         if(max(np.absolute(Beta - Beta_temp)) < max_tol):
             break
-
     res_sum = np.cov(resid)
     return res_sum, Beta
