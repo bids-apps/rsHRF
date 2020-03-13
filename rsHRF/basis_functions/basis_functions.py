@@ -123,7 +123,6 @@ BASIS FUNCTION COMPUTATION
 
 def compute_basis_function(bold_sig, para, temporal_mask, p_jobs):
     N, nvar = bold_sig.shape
-
     bf = get_basis_function(bold_sig, para, temporal_mask, p_jobs)
     length = para['len']
     folder = tempfile.mkdtemp()
@@ -131,7 +130,7 @@ def compute_basis_function(bold_sig, para, temporal_mask, p_jobs):
     dump(bold_sig, data_folder)
 
     data = load(data_folder, mmap_mode='r')
-    
+
     results = Parallel(n_jobs=p_jobs)(delayed(wgr_estimate_hrf)(data, i, para, length,
                                   N, bf, temporal_mask) for i in range(nvar))
 
@@ -158,7 +157,7 @@ def get_basis_function(bold_sig, para, temporal_mask, p_jobs):
         pst = pst/max(pst)
         bf = fourier_bf(pst,para)
     elif 'canon' in para['estimation']:
-        bf = canon2dd_bf(data, para)
+        bf = canon2dd_bf(bold_sig, para)
 
     bf = spm_dep.spm.spm_orth(np.asarray(bf))
     return bf
@@ -169,8 +168,8 @@ def canon2dd_bf(data, xBF):
     Returns canon basis functions
     """
     N, nvar = data.shape
-    bf = wgr_spm_get_canonhrf(xBF)
-    bf2 = wgr_spm_Volterra(bf, xBF)
+    bf = canon.canon_hrf2dd.wgr_spm_get_canonhrf(xBF)
+    bf2 = canon.canon_hrf2dd.wgr_spm_Volterra(bf, xBF)
     if bf2 != []:
         bf = np.column_stack((bf, bf2))
     return bf

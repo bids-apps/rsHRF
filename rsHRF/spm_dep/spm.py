@@ -8,6 +8,7 @@ import math
 import tempfile
 import os
 from rsHRF import canon
+
 warnings.filterwarnings("ignore")
 
 def spm_vol(input_nii_file):
@@ -134,7 +135,7 @@ def spm_detrend(x, p=0):
     return y
 
 
-def spm_write_vol(image_volume_info, image_voxels, image_name):
+def spm_write_vol(image_volume_info, image_voxels, image_name, file_type):
     """
     Writes an image volume to disk
 
@@ -144,7 +145,14 @@ def spm_write_vol(image_volume_info, image_voxels, image_name):
      containing the image voxels
     @image_name - name of the file to save the image in
     """
-    data = image_voxels
-    affine = image_volume_info.affine
-    image_volume_info = nib.Nifti1Image(data, affine)
-    nib.save(image_volume_info, image_name)
+    if file_type == ".nii" or file_type == ".nii.gz":
+        data = image_voxels
+        affine = image_volume_info.affine
+        image_volume_info = nib.Nifti1Image(data, affine)
+        nib.save(image_volume_info, image_name + file_type)
+    else:
+        data = image_voxels
+        gi = nib.GiftiImage()
+        for d in data:
+            gi.add_gifti_data_array(nib.gifti.GiftiDataArray(d))
+        nib.gifti.giftiio.write(gi, image_name + file_type)

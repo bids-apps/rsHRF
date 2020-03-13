@@ -4,6 +4,7 @@ from bids.grabbids import BIDSLayout
 import numpy as np
 import warnings
 from rsHRF import spm_dep, fourD_rsHRF
+import os
 
 with open(op.join(op.dirname(op.realpath(__file__)), "VERSION"), "r") as fh:
     __version__ = fh.read().strip('\n')
@@ -68,7 +69,7 @@ def get_parser():
     group_para.add_argument('-TR', action='store', type=float, default=-1,
                             help='set TR parameter')
 
-    group_para.add_argument('-T', action='store', type=float, default=3,
+    group_para.add_argument('-T', action='store', type=int, default=3,
                             help='set T parameter')
 
     group_para.add_argument('-T0', action='store', type=float, default=3,
@@ -126,8 +127,8 @@ def run_rsHRF():
     if args.input_file is not None and (not args.input_file.endswith(('.nii', '.nii.gz'))):
         parser.error('--input_file should end with .nii or .nii.gz')
 
-    if args.atlas is not None and (not args.atlas.endswith(('.nii', '.nii.gz'))):
-        parser.error('--atlas should end with .nii or .nii.gz')
+    if args.atlas is not None and (not args.atlas.endswith(('.nii', '.nii.gz','.gii', '.gii.gz'))):
+        parser.error('--atlas should end with .gii, .gii.gz, .nii or .nii.gz')
 
     if args.input_file is not None and args.atlas is not None:
         # carry analysis with input_file and atlas
@@ -195,8 +196,8 @@ def run_rsHRF():
                          'structure is present and correct. Datasets can be validated online '
                          'using the BIDS Validator (http://incf.github.io/bids-validator/).')
 
-        all_inputs = layout.get(modality='func', subject=subjects_to_analyze, task='rest', type='preproc', extensions=['nii', 'nii.gz'])
-        all_masks = layout.get(modality='func', subject=subjects_to_analyze, task='rest', type='brainmask', extensions=['nii', 'nii.gz'])
+        all_inputs = layout.get(modality='func', subject=subjects_to_analyze, task='rest', type='preproc', extensions=['nii', 'nii.gz', 'gii', 'gii.gz'])
+        all_masks = layout.get(modality='func', subject=subjects_to_analyze, task='rest', type='brainmask', extensions=['nii', 'nii.gz', 'gii', 'gii.gz'])
 
         if not all_inputs != []:
             parser.error('There are no files of type *preproc.nii / *preproc.nii.gz '
@@ -232,16 +233,20 @@ def run_rsHRF():
                          'Please consider renaming your files')
         else:
             for file_count in range(len(all_inputs)):
-                try:
-                    TR = layout.get_metadata(all_inputs[file_count].filename)['RepetitionTime']
-                except KeyError as e:
-                    TR = spm_dep.spm.spm_vol(all_inputs[file_count].filename).header.get_zooms()[-1]
-                para['TR'] = TR
+                file_type = os.path.splitext(all_inputs[file_count].filename)[1]
+                if file_type == ".nii" or file_type == ".nii.gz":
+                    try:
+                        TR = layout.get_metadata(all_inputs[file_count].filename)['RepetitionTime']
+                    except KeyError as e:
+                        TR = spm_dep.spm.spm_vol(all_inputs[file_count].filename).header.get_zooms()[-1]
+                    para['TR'] = TR
+
+
                 para['dt'] = para['TR'] / para['T']
                 para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
                                         np.fix(para['max_onset_search'] / para['dt']) + 1,
                                         dtype='int')
-                fourD_rsHRF.demo_4d_rsHRF(all_inputs[file_count], all_masks[file_count], args.output_dir, para, args.n_jobs, mode='bids')
+                fourD_rsHRF.demo_4d_rsHRF(all_inputs[file_count], all_masks[file_count], args.output_dir, para, args.n_jobs, file_type, mode='bids')
 
 
 def main():
