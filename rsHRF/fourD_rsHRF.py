@@ -7,10 +7,16 @@ from scipy import stats, signal
 from scipy.sparse import lil_matrix
 import scipy.io as sio
 import warnings
-from rsHRF import spm_dep, processing, canon, sFIR, parameters, basis_functions
+from rsHRF import spm_dep, processing, canon, sFIR, parameters, basis_functions, utils
 import nibabel as nib
 warnings.filterwarnings("ignore")
 
+def read_gifti_tr(v1):
+    subjects_tr = []
+    for subject in v1.get_arrays_from_intent("NIFTI_INTENT_TIME_SERIES"):
+        tr = float(subject.meta.get_metadata()["TimeStep"]) * 0.001
+        subjects_tr.append(tr)
+    return np.asarray(subjects_tr)
 
 def demo_4d_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type, mode='bids'):
     if not os.path.isdir(output_dir):
@@ -59,7 +65,9 @@ def demo_4d_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type, mo
             data1 = np.reshape(data, (-1, nobs), order='F').T
             bold_sig = stats.zscore(data1[:, voxel_ind], ddof=1)
             mask = v.agg_data()
-
+            #Read TR values (GIFTI can contain multiple subjects per file)
+            #tr = read_gifti_tr(v1)
+            #para['TR'] = tr
 
 
         bold_sig = np.nan_to_num(bold_sig)
@@ -71,16 +79,7 @@ def demo_4d_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type, mo
         event_number = np.zeros((1, bold_sig.shape[1]))
 
         print('Retrieving HRF ...')
-        if 'FIR' in para['estimation']:
-            para['T'] = 1
-            hrfa, event_bold = sFIR. \
-                smooth_fir. \
-                wgr_rsHRF_FIR(bold_sig, para, temporal_mask, p_jobs)
-        else :
-            basis_functions.basis_functions.compute_basis_function(bold_sig, para, temporal_mask, p_jobs)
-            beta_hrf, bf, event_bold = basis_functions.basis_functions.compute_basis_function(bold_sig, para, temporal_mask, p_jobs)
-            hrfa = np.dot(bf, beta_hrf[np.arange(0, bf.shape[1]), :])
-
+        hrfa, event_bold = utils.hrf_estimation.compute_hrf(bold_sig, para, temporal_mask, p_jobs)
         nvar = hrfa.shape[1]
         PARA = np.zeros((3, nvar))
 

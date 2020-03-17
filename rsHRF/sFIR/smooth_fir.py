@@ -142,45 +142,11 @@ def Fit_sFIR2(tc, TR, Runs, T, mode, ARlag):
 
     return hrf, e
 
-
-def wgr_rsHRF_FIR(data, para, temporal_mask, p_jobs):
-    para['temporal_mask'] = temporal_mask
-    N, nvar = data.shape
-    if np.count_nonzero(para['thr']) == 1:
-        para['thr'] = np.array([para['thr'], np.inf])
-
-    folder = tempfile.mkdtemp()
-    data_folder = os.path.join(folder, 'data')
-    dump(data, data_folder)
-    data = load(data_folder, mmap_mode='r')
-    results = Parallel(n_jobs=p_jobs)(delayed(wgr_FIR_estimation_HRF)(data, i, para, N) for i in range(0, nvar))
-    beta_rshrf, event_bold = zip(*results)
-
-    try:
-        shutil.rmtree(folder)
-    except:
-        print("Failed to delete: " + folder)
-
-    return np.array(beta_rshrf).T, np.array(event_bold)
-
-
-def wgr_FIR_estimation_HRF(data, i, para, N):
+def wgr_FIR_estimation_HRF(u, dat, para, N):
     if para['estimation'] == 'sFIR':
         firmode = 1
     else:
         firmode = 0
-    dat = data[:, i]
-
-    if 'localK' not in para:
-        if para['TR']<=2:
-            localK = 1
-        else:
-            localK = 2
-    else:
-        localK = para['localK']
-
-    u = basis_functions.basis_functions.wgr_BOLD_event_vector(N, dat, para['thr'], localK, para['temporal_mask'])
-    u = u.toarray().flatten(1).ravel().nonzero()[0]
 
     lag = para['lag']
     nlag = np.amax(lag.shape)
