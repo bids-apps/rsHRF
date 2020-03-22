@@ -28,7 +28,7 @@ def compute_hrf(bold_sig, para, temporal_mask, p_jobs):
 
     results = Parallel(n_jobs=p_jobs)(delayed(estimate_hrf)(data, i, para, length,
                                   N) for i in range(nvar))
-    #results = estimate_hrf(data, 0, para, length, N)
+
 
     beta_hrf, event_bold = zip(*results)
 
@@ -45,7 +45,6 @@ def estimate_hrf(bold_sig, i, para, length, N):
     """
     dat = bold_sig[:, i]
     thr = para['thr']
-
     if 'localK' not in para:
         if para['TR']<=2:
             localK = 1
@@ -132,6 +131,7 @@ def wgr_BOLD_event_vector(N, matrix, thr, k, temporal_mask):
     """
     data = lil_matrix((1, N))
     matrix = matrix[:, np.newaxis]
+
     if 0 in np.array(temporal_mask).shape:
         matrix = stats.zscore(matrix, ddof=1)
         matrix = np.nan_to_num(matrix)

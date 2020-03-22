@@ -6,6 +6,8 @@ import warnings
 from rsHRF import spm_dep, fourD_rsHRF
 import os
 
+
+
 with open(op.join(op.dirname(op.realpath(__file__)), "VERSION"), "r") as fh:
     __version__ = fh.read().strip('\n')
 
@@ -142,6 +144,8 @@ def run_rsHRF():
             elif para['TR'] <= 0:
                 print('Invalid TR supplied, using implicit TR: {0}'.format(TR))
                 para['TR'] = TR
+
+
         para['dt'] = para['TR'] / para['T']
         para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
                                 np.fix(para['max_onset_search'] / para['dt']) + 1,
@@ -239,13 +243,19 @@ def run_rsHRF():
                         TR = layout.get_metadata(all_inputs[file_count].filename)['RepetitionTime']
                     except KeyError as e:
                         TR = spm_dep.spm.spm_vol(all_inputs[file_count].filename).header.get_zooms()[-1]
-                    para['TR'] = TR
-
+                    para['TR'] = np.asarray([TR]) #Store scalar TR in a 2D vector (then you can do 1 function call without if for a scalar)
+                else:
+                    spm_dep.spm.spm_vol(all_inputs[file_count].filename)
+                    TR = spm_dep.spm.spm_vol(all_inputs[file_count].filename).get_arrays_from_intent("NIFTI_INTENT_TIME_SERIES")[0].meta.get_metadata()["TimeStep"]
+                    para['TR'] = np.asarray(TR)
 
                 para['dt'] = para['TR'] / para['T']
                 para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
                                         np.fix(para['max_onset_search'] / para['dt']) + 1,
                                         dtype='int')
+
+
+
                 fourD_rsHRF.demo_4d_rsHRF(all_inputs[file_count], all_masks[file_count], args.output_dir, para, args.n_jobs, file_type, mode='bids')
 
 

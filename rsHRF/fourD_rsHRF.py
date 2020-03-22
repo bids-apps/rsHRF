@@ -11,13 +11,6 @@ from rsHRF import spm_dep, processing, canon, sFIR, parameters, basis_functions,
 import nibabel as nib
 warnings.filterwarnings("ignore")
 
-def read_gifti_tr(v1):
-    subjects_tr = []
-    for subject in v1.get_arrays_from_intent("NIFTI_INTENT_TIME_SERIES"):
-        tr = float(subject.meta.get_metadata()["TimeStep"]) * 0.001
-        subjects_tr.append(tr)
-    return np.asarray(subjects_tr)
-
 def demo_4d_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type, mode='bids'):
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
@@ -65,9 +58,6 @@ def demo_4d_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type, mo
             data1 = np.reshape(data, (-1, nobs), order='F').T
             bold_sig = stats.zscore(data1[:, voxel_ind], ddof=1)
             mask = v.agg_data()
-            #Read TR values (GIFTI can contain multiple subjects per file)
-            #tr = read_gifti_tr(v1)
-            #para['TR'] = tr
 
 
         bold_sig = np.nan_to_num(bold_sig)
