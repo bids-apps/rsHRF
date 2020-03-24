@@ -243,11 +243,12 @@ def run_rsHRF():
                         TR = layout.get_metadata(all_inputs[file_count].filename)['RepetitionTime']
                     except KeyError as e:
                         TR = spm_dep.spm.spm_vol(all_inputs[file_count].filename).header.get_zooms()[-1]
-                    para['TR'] = np.asarray([TR]) #Store scalar TR in a 2D vector (then you can do 1 function call without if for a scalar)
+                    para['TR'] = TR
                 else:
                     spm_dep.spm.spm_vol(all_inputs[file_count].filename)
                     TR = spm_dep.spm.spm_vol(all_inputs[file_count].filename).get_arrays_from_intent("NIFTI_INTENT_TIME_SERIES")[0].meta.get_metadata()["TimeStep"]
-                    para['TR'] = np.asarray(TR)
+                    para['TR'] = float(TR) * 0.001
+
 
                 para['dt'] = para['TR'] / para['T']
                 para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
