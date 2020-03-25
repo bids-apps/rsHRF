@@ -29,7 +29,6 @@ def compute_hrf(bold_sig, para, temporal_mask, p_jobs):
     results = Parallel(n_jobs=p_jobs)(delayed(estimate_hrf)(data, i, para, length,
                                   N) for i in range(nvar))
 
-
     beta_hrf, event_bold = zip(*results)
 
     try:
@@ -44,7 +43,7 @@ def estimate_hrf(bold_sig, i, para, length, N):
     Estimate HRF
     """
     dat = bold_sig[:, i]
-    thr = para['thr']
+
     if 'localK' not in para:
         if para['TR']<=2:
             localK = 1
@@ -58,14 +57,15 @@ def estimate_hrf(bold_sig, i, para, length, N):
         #Estimate HRF for the sFIR or FIR basis functions
         if np.count_nonzero(para['thr']) == 1:
             para['thr'] = np.array([para['thr'], np.inf])
-
-        u = wgr_BOLD_event_vector(N, dat, para['thr'], localK, para['temporal_mask'])
+        thr = para['thr'] #Thr is a vector for (s)FIR
+        u = wgr_BOLD_event_vector(N, dat, thr, localK, para['temporal_mask'])
         u = u.toarray().flatten(1).ravel().nonzero()[0]
         beta_hrf, event_bold = sFIR.smooth_fir.wgr_FIR_estimation_HRF(u, dat, para, N)
     else:
         #Estimate HRF for the fourier / hanning / gamma / cannon basis functions
         bf = basis_functions.basis_functions.get_basis_function(bold_sig, para)
-        u0 = wgr_BOLD_event_vector(N, dat, para['thr'], localK, para['temporal_mask'])
+        thr = [para['thr']] #Thr is a scalar for the basis functions
+        u0 = wgr_BOLD_event_vector(N, dat, thr, localK, para['temporal_mask'])
         u = np.append(u0.toarray(), np.zeros((para['T'] - 1, N)), axis=0)
         u = np.reshape(u, (1, - 1), order='F')
         beta_hrf = wgr_hrf_fit(dat, length, para, u, N, bf)

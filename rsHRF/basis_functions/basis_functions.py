@@ -26,7 +26,7 @@ def get_basis_function(bold_sig, para):
         pst = np.arange(0,l+0.01,dt) #the 0.01 is because the rounding is different between python and matlab
         bf = gamma_bf(pst,para['order'])
     elif 'fourier' in para['estimation'] or 'hanning' in para['estimation']:
-        pst = np.arange(0,l,dt)
+        pst = np.arange(0,l+0.01,dt) #the 0.01 is because the rounding is different between python and matlab
         pst = pst/max(pst)
         bf = fourier_bf(pst,para)
     elif 'canon' in para['estimation']:
