@@ -13,6 +13,8 @@ from rsHRF import canon, processing, spm_dep, sFIR, basis_functions
 from ..processing import knee
 warnings.filterwarnings("ignore")
 
+global bf
+
 """
 HRF ESTIMATION
 """
@@ -36,14 +38,14 @@ def compute_hrf(bold_sig, para, temporal_mask, p_jobs):
     except:
         print("Failed to delete: " + folder)
 
-    return np.array(beta_hrf).T, np.array(event_bold)
+    return np.array(beta_hrf).T, np.array(event_bold), bf
 
 def estimate_hrf(bold_sig, i, para, length, N):
     """
     Estimate HRF
     """
     dat = bold_sig[:, i]
-
+    global bf
     if 'localK' not in para:
         if para['TR']<=2:
             localK = 1
