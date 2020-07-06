@@ -22,6 +22,7 @@ parameterFile = np.loadtxt("./Data/Input/parameters.dat")
 
 para['estimation'] = BF[int(parameterFile[0]-1)]
 TD_DD = parameterFile[0]
+para['TD_DD'] = TD_DD
 para['order'] = int(parameterFile[1])
 para['TR'] = parameterFile[2]
 para['passband'] = [parameterFile[3], parameterFile[4]]
