@@ -1,14 +1,9 @@
-import nibabel as nib
-import numpy as np
-from scipy.special import gammaln
-from joblib import Parallel, delayed
-from joblib import load, dump
-import warnings
 import math
-import tempfile
-import os
-from rsHRF import canon
+import numpy   as np
+import nibabel as nib
+from scipy.special import gammaln
 
+import warnings
 warnings.filterwarnings("ignore")
 
 def spm_vol(input_nii_file):

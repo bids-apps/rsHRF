@@ -1,14 +1,15 @@
+import os
 import matplotlib
 matplotlib.use('agg')
-import numpy as np
-import os
+import numpy             as np
+import nibabel           as nib
+import scipy.io          as sio
 import matplotlib.pyplot as plt
-from scipy import stats, signal
+from scipy        import stats, signal
 from scipy.sparse import lil_matrix
-import scipy.io as sio
-import warnings
 from rsHRF import spm_dep, processing, canon, sFIR, parameters, basis_functions, utils
-import nibabel as nib
+
+import warnings
 warnings.filterwarnings("ignore")
 
 def demo_4d_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type, mode='bids'):
@@ -39,8 +40,6 @@ def demo_4d_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type, mo
 
     voxel_ind = np.where(brain > 0)[0]
 
-
-
     if ((file_type == ".nii" or file_type == ".nii.gz") and v1.header.get_data_shape()[:-1] != v.header.get_data_shape()) or ((file_type == ".gii" or file_type == ".gii.gz") and v.agg_data().shape[0]!= v.agg_data().shape[0]):
         print('The dimension of your mask is different than '
               'the one of your fMRI data!')
@@ -59,9 +58,7 @@ def demo_4d_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type, mo
             bold_sig = stats.zscore(data1[:, voxel_ind], ddof=1)
             mask = v.agg_data()
 
-
         bold_sig = np.nan_to_num(bold_sig)
-
         bold_sig = processing. \
             rest_filter. \
             rest_IdealFilter(bold_sig, para['TR'], para['passband'])
@@ -69,7 +66,12 @@ def demo_4d_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type, mo
         event_number = np.zeros((1, bold_sig.shape[1]))
 
         print('Retrieving HRF ...')
-        hrfa, event_bold = utils.hrf_estimation.compute_hrf(bold_sig, para, temporal_mask, p_jobs)
+        beta_hrf, event_bold, bf = utils.hrf_estimation.compute_hrf(bold_sig, para, temporal_mask, p_jobs)
+        
+        if not (para['estimation'] == 'sFIR' or para['estimation'] == 'FIR'):
+            hrfa = np.dot(bf, beta_hrf[np.arange(0, bf.shape[1]), :])
+        else:
+            hrfa = beta_hrf
         nvar = hrfa.shape[1]
         PARA = np.zeros((3, nvar))
 

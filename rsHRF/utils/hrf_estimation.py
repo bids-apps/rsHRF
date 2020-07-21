@@ -1,19 +1,20 @@
-import nibabel as nib
-import numpy as np
-from scipy import stats, linalg
-from scipy.sparse import lil_matrix
-from scipy.special import gammaln
-from joblib import Parallel, delayed
-from joblib import load, dump
-import warnings
-import math
-import tempfile
 import os
-from rsHRF import canon, processing, spm_dep, sFIR, basis_functions
+import shutil
+import tempfile
+import numpy as np
+from scipy        import stats
+from scipy.sparse import lil_matrix
+from joblib       import load, dump
+from joblib       import Parallel, delayed
+from rsHRF        import processing, sFIR, basis_functions
 from ..processing import knee
+
+import warnings
 warnings.filterwarnings("ignore")
 
-global bf
+# to return the basis-functions for temporal-basis sets / empty for FIR & sFIR
+global bf_global 
+bf_global = np.array([])
 
 """
 HRF ESTIMATION
@@ -22,30 +23,25 @@ HRF ESTIMATION
 def compute_hrf(bold_sig, para, temporal_mask, p_jobs):
     para['temporal_mask'] = temporal_mask
     N, nvar = bold_sig.shape
-    length = para['len']
     folder = tempfile.mkdtemp()
     data_folder = os.path.join(folder, 'data')
     dump(bold_sig, data_folder)
     data = load(data_folder, mmap_mode='r')
-
-    results = Parallel(n_jobs=p_jobs)(delayed(estimate_hrf)(data, i, para, length,
+    results = Parallel(n_jobs=p_jobs)(delayed(estimate_hrf)(data, i, para,
                                   N) for i in range(nvar))
-
     beta_hrf, event_bold = zip(*results)
-
     try:
         shutil.rmtree(folder)
     except:
         print("Failed to delete: " + folder)
+    return np.array(beta_hrf).T, np.array(event_bold), bf_global
 
-    return np.array(beta_hrf).T, np.array(event_bold), bf
-
-def estimate_hrf(bold_sig, i, para, length, N):
+def estimate_hrf(bold_sig, i, para, N):
     """
     Estimate HRF
     """
+    global bf_global
     dat = bold_sig[:, i]
-    global bf
     if 'localK' not in para:
         if para['TR']<=2:
             localK = 1
@@ -53,26 +49,25 @@ def estimate_hrf(bold_sig, i, para, length, N):
             localK = 2
     else:
         localK = para['localK']
-
     if para['estimation'] == 'sFIR' or para['estimation'] == 'FIR':
-        para['T'] = 1
         #Estimate HRF for the sFIR or FIR basis functions
+        para['T'] = 1
         if np.count_nonzero(para['thr']) == 1:
             para['thr'] = np.array([para['thr'], np.inf])
         thr = para['thr'] #Thr is a vector for (s)FIR
         u = wgr_BOLD_event_vector(N, dat, thr, localK, para['temporal_mask'])
-        u = u.toarray().flatten(1).ravel().nonzero()[0]
+        u = u.toarray().flatten('C').ravel().nonzero()[0]
         beta_hrf, event_bold = sFIR.smooth_fir.wgr_FIR_estimation_HRF(u, dat, para, N)
     else:
         #Estimate HRF for the fourier / hanning / gamma / cannon basis functions
-        bf = basis_functions.basis_functions.get_basis_function(bold_sig, para)
+        bf = basis_functions.basis_functions.get_basis_function(bold_sig.shape, para)
         thr = [para['thr']] #Thr is a scalar for the basis functions
         u0 = wgr_BOLD_event_vector(N, dat, thr, localK, para['temporal_mask'])
         u = np.append(u0.toarray(), np.zeros((para['T'] - 1, N)), axis=0)
         u = np.reshape(u, (1, - 1), order='F')
-        beta_hrf = wgr_hrf_fit(dat, length, para, u, N, bf)
+        beta_hrf = wgr_hrf_fit(dat, para, u, bf)
         u = u0.toarray()[0].nonzero()[0]
-
+        bf_global = bf
     return beta_hrf, u
 
 def wgr_onset_design(u, bf, T, T0, nscans):
@@ -103,10 +98,10 @@ def wgr_glm_estimation(dat, u, bf, T, T0, AR_lag):
     nscans = dat.shape[0]
     x = wgr_onset_design(u, bf, T, T0, nscans)
     X = np.append(x, np.ones((nscans, 1)), axis=1)
-    res_sum, Beta = sFIR.smooth_fir.wgr_glsco(X, dat, AR_lag)
+    res_sum, Beta = sFIR.smooth_fir.wgr_glsco(X, dat, AR_lag=AR_lag)
     return np.real(res_sum), Beta
 
-def wgr_hrf_fit(dat, length, xBF, u, N, bf):
+def wgr_hrf_fit(dat, xBF, u, bf):
     """
     @u    - BOLD event vector (microtime).
     @nlag - time lag from neural event to BOLD event
@@ -120,10 +115,11 @@ def wgr_hrf_fit(dat, length, xBF, u, N, bf):
         u_lag = np.append(u[0, lag[i]:], np.zeros((1, lag[i]))).T
         erm[0, i], beta[:, i] = \
             wgr_glm_estimation(dat, u_lag, bf, xBF['T'], xBF['T0'], AR_lag)
-
     x, idx = knee.knee_pt(np.ravel(erm))
-    beta_hrf = beta[:, idx]
-    beta_hrf = np.append(beta_hrf, lag[idx])
+    if idx == nlag-1:
+        idx = idx - 1
+    beta_hrf = beta[:, idx+1]
+    beta_hrf = np.append(beta_hrf, lag[idx+1])
     return beta_hrf
 
 def wgr_BOLD_event_vector(N, matrix, thr, k, temporal_mask):
@@ -133,7 +129,6 @@ def wgr_BOLD_event_vector(N, matrix, thr, k, temporal_mask):
     """
     data = lil_matrix((1, N))
     matrix = matrix[:, np.newaxis]
-
     if 0 in np.array(temporal_mask).shape:
         matrix = stats.zscore(matrix, ddof=1)
         matrix = np.nan_to_num(matrix)
