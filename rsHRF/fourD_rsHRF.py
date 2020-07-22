@@ -12,7 +12,7 @@ from rsHRF import spm_dep, processing, canon, sFIR, parameters, basis_functions,
 import warnings
 warnings.filterwarnings("ignore")
 
-def demo_4d_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type, mode='bids'):
+def demo_4d_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii", mode='bids'):
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
 
@@ -47,17 +47,15 @@ def demo_4d_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type, mo
     else:
         if file_type == ".nii" or file_type == ".nii.gz" :
             data = v1.get_data()
-            nobs = data.shape[3]
-            data1 = np.reshape(data, (-1, nobs), order='F').T
-            bold_sig = stats.zscore(data1[:, voxel_ind], ddof=1)
+            nobs = data.shape[3]         
             mask = v.get_data()
         else:
             data = v1.agg_data()
             N, nobs = data.shape
-            data1 = np.reshape(data, (-1, nobs), order='F').T
-            bold_sig = stats.zscore(data1[:, voxel_ind], ddof=1)
             mask = v.agg_data()
 
+        data1 = np.reshape(data, (-1, nobs), order='F').T
+        bold_sig = stats.zscore(data1[:, voxel_ind], ddof=1)
         bold_sig = np.nan_to_num(bold_sig)
         bold_sig = processing. \
             rest_filter. \
@@ -66,12 +64,16 @@ def demo_4d_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type, mo
         event_number = np.zeros((1, bold_sig.shape[1]))
 
         print('Retrieving HRF ...')
-        beta_hrf, event_bold, bf = utils.hrf_estimation.compute_hrf(bold_sig, para, temporal_mask, p_jobs)
-        
+
         if not (para['estimation'] == 'sFIR' or para['estimation'] == 'FIR'):
+            #Estimate HRF for the fourier / hanning / gamma / cannon basis functions
+            bf = basis_functions.basis_functions.get_basis_function(bold_sig.shape, para)
+            beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(bold_sig, para, temporal_mask, p_jobs, bf)
             hrfa = np.dot(bf, beta_hrf[np.arange(0, bf.shape[1]), :])
         else:
+            beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(bold_sig, para, temporal_mask, p_jobs)
             hrfa = beta_hrf
+
         nvar = hrfa.shape[1]
         PARA = np.zeros((3, nvar))
 
@@ -83,8 +85,6 @@ def demo_4d_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type, mo
         print('Done')
 
         print('Deconvolving HRF ...')
-
-        T = np.around(para['len'] / para['TR'])
 
         if para['T'] > 1:
             hrfa_TR = signal.resample_poly(hrfa, 1, para['T'])
@@ -171,8 +171,10 @@ def demo_4d_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type, mo
         markerline, stemlines, baseline = \
             plt.stem(para['TR'] * np.arange(1, nobs + 1), event_plot)
         plt.setp(baseline, 'color', 'k', 'markersize', 1)
-        plt.setp(stemlines, 'color', 'k', 'markersize', 1)
+        plt.setp(stemlines, 'color', 'k')
         plt.setp(markerline, 'color', 'k', 'markersize', 3, 'marker', 'd')
         plt.legend(['BOLD', 'deconvolved', 'events'])
         plt.xlabel('time (s)')
         plt.savefig(os.path.join(sub_save_dir, name + '_plot_2.png'))
+
+        print('Done')

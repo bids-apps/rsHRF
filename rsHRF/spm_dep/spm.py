@@ -6,11 +6,11 @@ from scipy.special import gammaln
 import warnings
 warnings.filterwarnings("ignore")
 
-def spm_vol(input_nii_file):
+def spm_vol(input_file):
     """
     Get header information for images
     """
-    v = nib.load(input_nii_file)
+    v = nib.load(input_file)
     return v
 
 
