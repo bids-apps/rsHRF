@@ -6,21 +6,17 @@ from scipy        import stats
 from scipy.sparse import lil_matrix
 from joblib       import load, dump
 from joblib       import Parallel, delayed
-from rsHRF        import processing, sFIR, basis_functions
+from rsHRF        import processing, sFIR
 from ..processing import knee
 
 import warnings
 warnings.filterwarnings("ignore")
 
-# to return the basis-functions for temporal-basis sets / empty for FIR & sFIR
-global bf_global 
-bf_global = np.array([])
-
 """
 HRF ESTIMATION
 """
 
-def compute_hrf(bold_sig, para, temporal_mask, p_jobs):
+def compute_hrf(bold_sig, para, temporal_mask, p_jobs, bf = None):
     para['temporal_mask'] = temporal_mask
     N, nvar = bold_sig.shape
     folder = tempfile.mkdtemp()
@@ -28,19 +24,18 @@ def compute_hrf(bold_sig, para, temporal_mask, p_jobs):
     dump(bold_sig, data_folder)
     data = load(data_folder, mmap_mode='r')
     results = Parallel(n_jobs=p_jobs)(delayed(estimate_hrf)(data, i, para,
-                                  N) for i in range(nvar))
+                                  N, bf) for i in range(nvar))
     beta_hrf, event_bold = zip(*results)
     try:
         shutil.rmtree(folder)
     except:
         print("Failed to delete: " + folder)
-    return np.array(beta_hrf).T, np.array(event_bold), bf_global
+    return np.array(beta_hrf).T, np.array(event_bold)
 
-def estimate_hrf(bold_sig, i, para, N):
+def estimate_hrf(bold_sig, i, para, N, bf = None):
     """
     Estimate HRF
     """
-    global bf_global
     dat = bold_sig[:, i]
     if 'localK' not in para:
         if para['TR']<=2:
@@ -59,8 +54,6 @@ def estimate_hrf(bold_sig, i, para, N):
         u = u.toarray().flatten('C').ravel().nonzero()[0]
         beta_hrf, event_bold = sFIR.smooth_fir.wgr_FIR_estimation_HRF(u, dat, para, N)
     else:
-        #Estimate HRF for the fourier / hanning / gamma / cannon basis functions
-        bf = basis_functions.basis_functions.get_basis_function(bold_sig.shape, para)
         thr = [para['thr']] #Thr is a scalar for the basis functions
         u0 = wgr_BOLD_event_vector(N, dat, thr, localK, para['temporal_mask'])
         u = np.append(u0.toarray(), np.zeros((para['T'] - 1, N)), axis=0)
