@@ -4,6 +4,9 @@ from bids.grabbids import BIDSLayout
 import numpy as np
 import warnings
 from rsHRF import spm_dep, fourD_rsHRF
+import os
+
+
 
 with open(op.join(op.dirname(op.realpath(__file__)), "VERSION"), "r") as fh:
     __version__ = fh.read().strip('\n')
@@ -18,20 +21,20 @@ def get_parser():
     group_input.add_argument('--input_file', action='store', type=op.abspath,
                              help='the absolute path to a single data file')
 
-    group_input.add_argument('bids_dir', nargs='?', action='store', type=op.abspath,
+    group_input.add_argument('--bids_dir', nargs='?', action='store', type=op.abspath,
                              help='the root folder of a BIDS valid dataset '
                                   '(sub-XXXXX folders should be found at the '
                                   'top level in this folder).')
 
-    parser.add_argument('output_dir', action='store', type=op.abspath,
-                        help='the output path for the outcomes of processing')
+    parser.add_argument('--output_dir', action='store', type=op.abspath,
+                        help='the output path for the outcomes of processing', required=True)
 
     parser.add_argument('--n_jobs', action='store', type=int, default=-1,
                         help='the number of parallel processing elements')
 
     parser.add_argument('-v', '--version', action='version', version='rsHRF version {}'.format(__version__))
 
-    parser.add_argument('analysis_level', help='Level of the analysis that will be performed. '
+    parser.add_argument('--analysis_level', help='Level of the analysis that will be performed. '
                         'Multiple participant level analyses can be run independently '
                         '(in parallel) using the same output_dir.', choices=['participant'], nargs='?')
 
@@ -55,11 +58,14 @@ def get_parser():
     group_para = parser.add_argument_group('Parameters')
 
     group_para.add_argument('--estimation', action='store',
-                            choices=['canon2dd', 'sFIR', 'FIR'], required=True,
+                            choices=['canon2dd', 'sFIR', 'FIR', 'fourier', 'hanning', 'gamma'], required=True,
                             help='Choose the estimation procedure from '
                                  'canon2dd (canonical shape with 2 derivatives), '
                                  'sFIR (smoothed Finite Impulse Response) , '
-                                 'FIR (Finite Impulse Response)')
+                                 'FIR (Finite Impulse Response)'
+                                 'fourier (Fourier Basis Set)'
+                                 'hanning (Fourier Basis w Hanning)'
+                                 'gamma (Gamma Basis Set)')
 
     group_para.add_argument('--passband', action='store', type=float, nargs=2, metavar=('LOW_FREQ','HIGH_FREQ'),
                             default=[0.01, 0.08],
@@ -68,7 +74,7 @@ def get_parser():
     group_para.add_argument('-TR', action='store', type=float, default=-1,
                             help='set TR parameter')
 
-    group_para.add_argument('-T', action='store', type=float, default=3,
+    group_para.add_argument('-T', action='store', type=int, default=3,
                             help='set T parameter')
 
     group_para.add_argument('-T0', action='store', type=float, default=3,
@@ -77,11 +83,14 @@ def get_parser():
     group_para.add_argument('-TD_DD', action='store', type=int, default=2,
                             help='set TD_DD parameter')
 
-    group_para.add_argument('-AR_lag', action='store', type=float, default=1,
+    group_para.add_argument('-AR_lag', action='store', type=int, default=1,
                             help='set AR_lag parameter')
 
     group_para.add_argument('--thr', action='store', type=float, default=1,
                             help='set thr parameter')
+
+    group_para.add_argument('--order', action='store', type=int, default=3,
+                            help='set the number of basis vectors')
 
     group_para.add_argument('--len', action='store', type=int, default=24,
                             help='set len parameter')
@@ -91,6 +100,9 @@ def get_parser():
 
     group_para.add_argument('--max_onset_search', action='store', type=int, default=8,
                             help='set max_onset_search parameter')
+
+    group_para.add_argument('--localK', action='store', type=int,
+                            help='set localK')
 
     return parser
 
@@ -120,30 +132,51 @@ def run_rsHRF():
     if args.bids_dir is not None and not args.analysis_level:
         parser.error('analysis_level needs to be supplied with bids_dir, choices=[participant]')
 
-    if args.input_file is not None and (not args.input_file.endswith(('.nii', '.nii.gz'))):
-        parser.error('--input_file should end with .nii or .nii.gz')
+    if args.input_file is not None and (not args.input_file.endswith(('.nii', '.nii.gz', '.gii', '.gii.gz'))):
+        parser.error('--input_file should end with .gii, .gii.gz, .nii or .nii.gz')
 
-    if args.atlas is not None and (not args.atlas.endswith(('.nii', '.nii.gz'))):
-        parser.error('--atlas should end with .nii or .nii.gz')
-
+    if args.atlas is not None and (not args.atlas.endswith(('.nii', '.nii.gz','.gii', '.gii.gz'))):
+        parser.error('--atlas should end with .gii, .gii.gz, .nii or .nii.gz')
+    
     if args.input_file is not None and args.atlas is not None:
-        # carry analysis with input_file and atlas
-        TR = spm_dep.spm.spm_vol(args.input_file).header.get_zooms()[-1]
-        if TR <= 0:
-            if para['TR'] <= 0:
-                parser.error('Please supply a valid TR using -TR argument')
-        else:
-            if para['TR'] == -1:
-                para['TR'] = TR
-            elif para['TR'] <= 0:
-                print('Invalid TR supplied, using implicit TR: {0}'.format(TR))
-                para['TR'] = TR
-        para['dt'] = para['TR'] / para['T']
-        para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
-                                np.fix(para['max_onset_search'] / para['dt']) + 1,
-                                dtype='int')
-        fourD_rsHRF.demo_4d_rsHRF(args.input_file, args.atlas, args.output_dir, para, args.n_jobs, mode='input w/ atlas')
 
+        if args.output_dir is None:
+            parser.error('the following arguments are required: --output_dir')
+
+        if (args.input_file.endswith(('.nii', '.nii.gz')) and args.atlas.endswith(('.gii', '.gii.gz'))) or (args.input_file.endswith(('.gii', '.gii.gz')) and args.atlas.endswith(('.nii', '.nii.gz'))):
+             parser.error('--atlas and input_file should be of the same type [NIfTI or GIfTI]')
+        else:
+            # carry analysis with input_file and atlas
+            file_type = op.splitext(args.input_file)
+            if file_type[-1] == ".gz":
+                file_type = op.splitext(file_type[-2])[-1] + file_type[-1]
+            else:
+                file_type = file_type[-1]
+
+            if ".nii" in file_type:
+                TR = (spm_dep.spm.spm_vol(args.input_file).header.get_zooms())[-1]
+            else:
+                if para['TR'] == -1:
+                    parser.error('Please supply a valid TR using -TR argument')
+                else:
+                    TR = para['TR']
+
+            if TR <= 0:
+                if para['TR'] <= 0:
+                    parser.error('Please supply a valid TR using -TR argument')
+            else:
+                if para['TR'] == -1:
+                    para['TR'] = TR
+                elif para['TR'] <= 0:
+                    print('Invalid TR supplied, using implicit TR: {0}'.format(TR))
+                    para['TR'] = TR
+
+            para['dt'] = para['TR'] / para['T']
+            para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
+                                    np.fix(para['max_onset_search'] / para['dt']) + 1,
+                                    dtype='int')
+            fourD_rsHRF.demo_4d_rsHRF(args.input_file, args.atlas, args.output_dir, para, args.n_jobs, file_type, mode='input w/ atlas')
+    
     if args.bids_dir is not None and args.atlas is not None:
         # carry analysis with bids_dir and 1 atlas
         layout = BIDSLayout(args.bids_dir)
@@ -158,6 +191,9 @@ def run_rsHRF():
             parser.error('Could not find participants. Please make sure the BIDS data '
                          'structure is present and correct. Datasets can be validated online '
                          'using the BIDS Validator (http://incf.github.io/bids-validator/).')
+
+        if not args.atlas.endswith(('.nii', '.nii.gz')):
+            parser.error('--atlas should end with .nii or .nii.gz')
 
         all_inputs = layout.get(modality='func', subject=subjects_to_analyze, task='rest', type='preproc', extensions=['nii', 'nii.gz'])
         if not all_inputs != []:
@@ -229,15 +265,24 @@ def run_rsHRF():
                          'Please consider renaming your files')
         else:
             for file_count in range(len(all_inputs)):
-                try:
-                    TR = layout.get_metadata(all_inputs[file_count].filename)['RepetitionTime']
-                except KeyError as e:
-                    TR = spm_dep.spm.spm_vol(all_inputs[file_count].filename).header.get_zooms()[-1]
-                para['TR'] = TR
+                file_type = os.path.splitext(all_inputs[file_count].filename)[1]
+                if file_type == ".nii" or file_type == ".nii.gz":
+                    try:
+                        TR = layout.get_metadata(all_inputs[file_count].filename)['RepetitionTime']
+                    except KeyError as e:
+                        TR = spm_dep.spm.spm_vol(all_inputs[file_count].filename).header.get_zooms()[-1]
+                    para['TR'] = TR
+                else:
+                    spm_dep.spm.spm_vol(all_inputs[file_count].filename)
+                    TR = spm_dep.spm.spm_vol(all_inputs[file_count].filename).get_arrays_from_intent("NIFTI_INTENT_TIME_SERIES")[0].meta.get_metadata()["TimeStep"]
+                    para['TR'] = float(TR) * 0.001
+
+
                 para['dt'] = para['TR'] / para['T']
                 para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
                                         np.fix(para['max_onset_search'] / para['dt']) + 1,
                                         dtype='int')
+
                 fourD_rsHRF.demo_4d_rsHRF(all_inputs[file_count], all_masks[file_count], args.output_dir, para, args.n_jobs, mode='bids')
 
 

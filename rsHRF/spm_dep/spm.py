@@ -1,15 +1,16 @@
+import math
+import numpy   as np
 import nibabel as nib
-import numpy as np
 from scipy.special import gammaln
-import warnings
 
+import warnings
 warnings.filterwarnings("ignore")
 
-def spm_vol(input_nii_file):
+def spm_vol(input_file):
     """
     Get header information for images
     """
-    v = nib.load(input_nii_file)
+    v = nib.load(input_file)
     return v
 
 
@@ -129,7 +130,7 @@ def spm_detrend(x, p=0):
     return y
 
 
-def spm_write_vol(image_volume_info, image_voxels, image_name):
+def spm_write_vol(image_volume_info, image_voxels, image_name, file_type):
     """
     Writes an image volume to disk
 
@@ -139,33 +140,13 @@ def spm_write_vol(image_volume_info, image_voxels, image_name):
      containing the image voxels
     @image_name - name of the file to save the image in
     """
-    data = image_voxels
-    affine = image_volume_info.affine
-    image_volume_info = nib.Nifti1Image(data, affine)
-    nib.save(image_volume_info, image_name)
-
-
-def spm_get_bf(xBF):
-    dt = xBF['dt']
-    p = np.array([6, 16, 1, 1, 6, 0, 32], dtype=float)
-    bf = spm_hrf(dt)
-
-    if len(bf.shape) == 1:
-        bf = bf[:, np.newaxis]
-
-    dp = 1
-    p[5] = p[5] + dp
-    D = (bf[:, 0] - spm_hrf(dt, p)) / dp
-    bf = np.column_stack((bf, D.flatten(1)))
-    p[5] = p[5] - dp
-
-    dp = 0.01
-    p[2] = p[2] + dp
-    D = (bf[:, 0] - spm_hrf(dt, p)) / dp
-    bf = np.column_stack((bf, D.flatten(1)))
-
-    xBF['length'] = bf.shape[0] * dt
-    xBF['order'] = bf.shape[1]
-
-    xBF['bf'] = spm_orth(bf)
-    return xBF
+    if file_type == ".nii" or file_type == ".nii.gz":
+        data = image_voxels
+        affine = image_volume_info.affine
+        image_volume_info = nib.Nifti1Image(data, affine)
+        nib.save(image_volume_info, image_name + file_type)
+    else:
+        data = image_voxels
+        gi = nib.GiftiImage()
+        gi.add_gifti_data_array(nib.gifti.GiftiDataArray(image_voxels))
+        nib.gifti.giftiio.write(gi, image_name + file_type)
