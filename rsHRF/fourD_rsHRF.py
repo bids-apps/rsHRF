@@ -27,6 +27,11 @@ def demo_4d_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".n
         v = spm_dep.spm.spm_vol(mask_file)
 
     temporal_mask = []
+    if 'localK' not in para or para['localK'] == None:
+        if para['TR']<=2:
+            para['localK'] = 1
+        else:
+            para['localK'] = 2
 
     if mode == 'bids' or mode == 'bids w/ atlas':
         v1 = spm_dep.spm.spm_vol(input_file.filename)
@@ -72,7 +77,7 @@ def demo_4d_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".n
             hrfa = np.dot(bf, beta_hrf[np.arange(0, bf.shape[1]), :])
         else:
             beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(bold_sig, para, temporal_mask, p_jobs)
-            hrfa = beta_hrf
+            hrfa = beta_hrf[:-1,:]
 
         nvar = hrfa.shape[1]
         PARA = np.zeros((3, nvar))

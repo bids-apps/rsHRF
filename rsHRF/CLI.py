@@ -101,6 +101,9 @@ def get_parser():
     group_para.add_argument('--max_onset_search', action='store', type=int, default=8,
                             help='set max_onset_search parameter')
 
+    group_para.add_argument('--localK', action='store', type=int,
+                            help='set localK')
+
     return parser
 
 

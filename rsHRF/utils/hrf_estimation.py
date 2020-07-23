@@ -37,13 +37,7 @@ def estimate_hrf(bold_sig, i, para, N, bf = None):
     Estimate HRF
     """
     dat = bold_sig[:, i]
-    if 'localK' not in para:
-        if para['TR']<=2:
-            localK = 1
-        else:
-            localK = 2
-    else:
-        localK = para['localK']
+    localK = para['localK']
     if para['estimation'] == 'sFIR' or para['estimation'] == 'FIR':
         #Estimate HRF for the sFIR or FIR basis functions
         para['T'] = 1
