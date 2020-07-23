@@ -23,7 +23,10 @@ def wgr_regress(y, X):
         perm = perm[0:p]
     b = np.zeros((ncolX))
     if(R.shape[0] == R.shape[1]):
-        b[perm] = linalg.solve(R,np.matmul(Q.T,y))
+        try:
+            b[perm] = linalg.solve(R,np.matmul(Q.T,y))
+        except:
+            b[perm] = linalg.lstsq(R,np.matmul(Q.T,y))
     else:
         b[perm] = linalg.lstsq(R,np.matmul(Q.T,y))
     return b
@@ -53,7 +56,10 @@ def wgr_glsco(X, Y, sMRI = [], AR_lag=0, max_iter=20):
         Beta = wgr_regress(Y,X)
     else:
         sMRI = np.array(sMRI)
-        Beta = linalg.solve(np.matmul(X.T,X)+sMRI,np.matmul(X.T,Y))
+        try:
+            Beta = linalg.solve(np.matmul(X.T,X)+sMRI,np.matmul(X.T,Y))
+        except:
+            Beta = linalg.lstsq(np.matmul(X.T,X)+sMRI,np.matmul(X.T,Y))
     resid = Y - np.matmul(X,Beta)
     if AR_lag == 0:
         res_sum = np.cov(resid)
@@ -75,7 +81,10 @@ def wgr_glsco(X, Y, sMRI = [], AR_lag=0, max_iter=20):
         if sMRI == []:
             Beta = wgr_regress(Y_main, X_main)
         else:
-            Beta = linalg.solve(np.matmul(X_main.T,X_main)+sMRI,np.matmul(X_main.T,Y_main))
+            try:
+                Beta = linalg.solve(np.matmul(X_main.T,X_main)+sMRI,np.matmul(X_main.T,Y_main))
+            except:
+                Beta = linalg.lstsq(np.matmul(X_main.T,X_main)+sMRI,np.matmul(X_main.T,Y_main))
         resid = Y[AR_lag:nobs] - X[AR_lag:nobs, :].dot(Beta)
         if(max(np.absolute(Beta - Beta_temp)) < max_tol):
             break
@@ -104,7 +113,10 @@ def Fit_sFIR2(output, length, TR, input, T, flag_sfir, AR_lag):
         sMRI = np.zeros((NN+1, NN+1))
         sMRI[0:NN,0:NN] = sMRI0; 
         if AR_lag == 0:
-            hrf = linalg.solve((np.matmul(X.T,X)+sMRI),np.matmul(X.T,output))
+            try:
+                hrf = linalg.solve((np.matmul(X.T,X)+sMRI),np.matmul(X.T,output))
+            except:
+                hrf = linalg.lstsq((np.matmul(X.T,X)+sMRI),np.matmul(X.T,output))
             resid = output - np.matmul(X, hrf)
             res_sum = np.cov(resid)
         else:
