@@ -10,6 +10,7 @@ from datatypes.timeseries.timeseries import TimeSeries
 from datatypes.timeseries.bold_deconv import Bold_Deconv
 from datatypes.misc.parameters import Parameters
 from datatypes.misc.subject import Subject
+from datatypes.misc.store import Store
 from misc.status import Status
 from rsHRF       import spm_dep, processing, canon, sFIR, parameters, basis_functions, utils, fourD_rsHRF
 
@@ -17,16 +18,36 @@ import warnings
 warnings.filterwarnings("ignore")
 
 class Core():
-    def __init__(self, dataStore):
+    def __init__(self):
         self.parameters = Parameters()
-        self.dataStore  = dataStore
+        self.dataStore  = Store()
 
+    # getters for data-store
     def updateParameters(self, dic={}):     
         return self.parameters.set_parameters(dic)
 
     def get_parameters(self):
         return self.parameters.get_parameters()
+
+    def get_time_series(self, curr):
+        return self.dataStore.get_time_series(curr)
+
+    def get_plotables(self, curr):
+        return self.dataStore.get_plotables(curr)
+
+    def get_store_info(self, curr):
+        return self.dataStore.get_info(curr)
+
+    def get_subjects(self):
+        return self.dataStore.get_subjects()
     
+    def get_data_labels(self, curr):
+        return self.dataStore.get_data_labels(curr)
+
+    # saving data
+    def save_info(self, curr, out):
+        return self.dataStore.save_info(curr, out)
+
     def makeInput(self, inp, choice=None):
         input_file, mask_file, file_type, mode = inp
         if mode == "file":
