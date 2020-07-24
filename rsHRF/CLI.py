@@ -32,7 +32,7 @@ def get_parser():
     parser.add_argument('--n_jobs', action='store', type=int, default=-1,
                         help='the number of parallel processing elements')
 
-    parser.add_argument('-v', '--version', action='version', version='rsHRF version {}'.format(__version__))
+    parser.add_argument('-V', '--version', action='version', version='rsHRF version {}'.format(__version__))
 
     parser.add_argument('--analysis_level', help='Level of the analysis that will be performed. '
                         'Multiple participant level analyses can be run independently '

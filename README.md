@@ -50,6 +50,7 @@ Collaborators
 
 * Madhur Tandon (Python - BIDS)
 * Asier Erramuzpe (Python - BIDS)
+* Amogh Johri   (Python - BIDS)
 
 
 **References**
