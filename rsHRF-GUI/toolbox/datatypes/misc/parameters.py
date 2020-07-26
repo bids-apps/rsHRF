@@ -1,29 +1,34 @@
 import numpy as np
-from copy import deepcopy
+from copy        import deepcopy
 from misc.status import Status
 
 class Parameters():
+    """ 
+    rsHRF-Toolbox Parameters
+    For more information, visit https://github.com/BIDS-Apps/rsHRF/tree/master/rsHRF
+    """
     def __init__(self):
         # initialize default parameters
-        self.estimation = 'canon2dd'
-        self.passband = [0.01, 0.08]
-        self.TR = 2.0 
-        self.localK = 1
-        self.T = 3
-        self.T0 = 1
-        self.TD_DD = 2
-        self.AR_lag = 1
-        self.thr = 1
-        self.order = 3
-        self.volterra = 0
-        self.len = 24
-        self.temporal_mask = []
+        self.estimation       = 'canon2dd'
+        self.passband         = [0.01, 0.08]
+        self.TR               = 2.0 
+        self.localK           = 1
+        self.T                = 3
+        self.T0               = 1
+        self.TD_DD            = 2
+        self.AR_lag           = 1
+        self.thr              = 1
+        self.order            = 3
+        self.volterra         = 0
+        self.len              = 24      
+        self.temporal_mask    = []
         self.min_onset_search = 4
         self.max_onset_search = 8
-        self.dt = self.TR/self.T
-        self.lag = np.arange(np.fix(self.min_onset_search / self.dt),
-                    np.fix(self.max_onset_search / self.dt) + 1,
-                    dtype='int')
+        self.dt               = self.TR/self.T
+        self.lag              = np.arange(np.fix(self.min_onset_search / self.dt),
+                                np.fix(self.max_onset_search / self.dt) + 1,
+                                dtype='int')
+
     # getters
     def get_estimation(self):
         return self.estimation 
@@ -44,6 +49,7 @@ class Parameters():
         return self.get_T0
     
     def get_TD_DD(self):
+        # TD_DD is only relevant for canon2dd estimation
         if self.estimation == 'canon2dd':
             return self.TD_DD 
         else:
@@ -56,12 +62,14 @@ class Parameters():
         return self.thr 
     
     def get_order(self):
+        # order is only relevant for fourier and gamma estimation
         if 'gamma' in self.get_estimation or 'fourier' in self.get_estimation:
             return self.order 
         else:
             return None 
     
     def get_Volterra(self):
+        # volterra is only relevant for canon2dd estimation
         if self.get_estimation == 'canon2dd':
             return self.volterra
         else:
@@ -85,6 +93,11 @@ class Parameters():
         return Status(True)
     
     def set_passband(self, l):
+        """ 
+        Takes a list (with two entries) as input and sets the 
+            passband-range
+        Checks whether both the values are non-negative 
+        """
         try:
             l = [float(i) for i in l.split(",")]
             if l[0] < 0 or l[1] < 0:
@@ -96,6 +109,10 @@ class Parameters():
                 return Status(True)
     
     def set_TR(self, TR):
+        """ 
+        Checks whether the value is postiive
+        and updates 'dt' as it is dependent on TR
+        """
         try:
             TR = float(TR)
         except:
@@ -109,6 +126,9 @@ class Parameters():
                 return Status(True)
     
     def set_localK(self, localK):
+        """
+        Checks whether the value of localK is positive
+        """
         try:
             localK = int(localK)
         except:
@@ -121,6 +141,10 @@ class Parameters():
                 return Status(True)
     
     def set_T(self, T):
+        """
+        Checks whether the value of T >= 1
+        and updates 'dt' as it is dependent on T
+        """
         try:
             T = int(T)
         except:
@@ -133,7 +157,7 @@ class Parameters():
                 self.update_dt()
                 return Status(True)
     
-    def set_T0(self, T0): # need to fix this
+    def set_T0(self, T0):
         try:
             T0 = int(T0)
         except:
@@ -143,6 +167,9 @@ class Parameters():
             return Status(True)
     
     def set_TD_DD(self, TD_DD):
+        """
+        Sets the value of TD_DD if the estimation is canon2dd
+        """
         if self.estimation == 'canon':
             try:
                 TD_DD = int(TD_DD)
@@ -157,6 +184,9 @@ class Parameters():
             return Status(True)
     
     def set_AR_lag(self, AR_lag):
+        """
+        Checks whether the AR_lag is non-negative
+        """
         try:
             AR_lag = int(AR_lag)
         except:
@@ -169,6 +199,10 @@ class Parameters():
                 return Status(True)
     
     def set_thr(self, thr):
+        """
+        If estimation is FIR or sFIR, thr is a list
+        Otherwise, it is an int
+        """
         if 'FIR' not in self.estimation :
             try:
                 thr = int(thr)
@@ -187,6 +221,9 @@ class Parameters():
                 return Status(True)
     
     def set_order(self, order):
+        """
+        Checks whether the order lies between 1 to 60
+        """
         try:
             order = int(order)
         except:
@@ -204,6 +241,9 @@ class Parameters():
                 return Status(True)
     
     def set_Volterra(self, volterra):
+        """
+        Sets Volterra if the estimation rule is canon2dd
+        """
         if self.estimation == 'canon':
             try:
                 volterra = int(volterra)
@@ -216,6 +256,9 @@ class Parameters():
             return Status(True)
     
     def set_len(self, length):
+        """
+        Checks whether the length of the hemodynamic response function is non-negative
+        """
         try:
             length = int(length)
         except:
@@ -234,6 +277,10 @@ class Parameters():
         return Status(True)
     
     def set_min_onset_search(self, mos):
+        """
+        Checks whether the min-onset-search is smaller than max-onset-search
+        and non-negative
+        """
         try:
             mos = int(mos)
         except:
@@ -252,6 +299,10 @@ class Parameters():
                 return Status(True) 
     
     def set_max_onset_search(self, mos):
+        """
+        Checks whether max-onset-search is greater than min-onset-search
+        and non-negative
+        """
         try:
             mos = int(mos)
         except:
@@ -270,16 +321,24 @@ class Parameters():
                 return Status(True)
 
     def update_dt(self):
+        """
+        Re-calculating dt
+        """
         self.dt  = self.TR / self.T 
         self.update_lag()
     
     def update_lag(self):
+        """
+        Re-calculating lag
+        """
         self.lag = np.arange(np.fix(self.min_onset_search / self.dt),
                     np.fix(self.max_onset_search / self.dt) + 1,
                     dtype='int')
     
-    # get all parameters
     def get_parameters(self):
+        """
+        Gets all the parameters in the form of a dictionary for rsHRF computation
+        """
         para                     = {}
         para['estimation']       = self.estimation
         para['passband']         = deepcopy(self.passband)
@@ -294,16 +353,18 @@ class Parameters():
         para['min_onset_search'] = self.min_onset_search
         para['max_onset_search'] = self.max_onset_search
         if self.estimation == 'canon2dd':
-            para['TD_DD']    = self.TD_DD
-            para['Volterra'] = self.volterra
+            para['TD_DD']        = self.TD_DD
+            para['Volterra']     = self.volterra
         elif 'gamma' in self.estimation or 'fourier' in self.estimation:
-            para['order']    = self.order 
-        para['dt']           = self.dt 
-        para['lag']          = self.lag 
+            para['order']        = self.order 
+        para['dt']               = self.dt 
+        para['lag']              = self.lag 
         return para
         
-    # set all parameters
     def set_parameters(self, dic):
+        """
+        Takes a dictionary as input and sets all the rsHRF parameters accordingly
+        """
         for key in dic.keys():
             if key   == "estimation":
                 out  = self.set_estimation(dic[key])
@@ -340,6 +401,10 @@ class Parameters():
         return Status(True, info="Parameters Updated Succefully")
             
     def compareParameters(self, p):
+        """
+        Takes another parameter object and determines if it is equal 
+        to the this object
+        """
         x = self.get_parameters()
         y = p.get_parameters()
         for key in x.keys():

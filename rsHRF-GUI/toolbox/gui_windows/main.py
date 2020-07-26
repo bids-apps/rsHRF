@@ -1,17 +1,15 @@
 import os
 import time
 from scipy.io   import savemat
+from tkinter    import Tk, Button, Label, OptionMenu, StringVar
 
-from .inputWindow import InputWindow
-from .loggingWindow import LoggingWindow
+from .inputWindow          import InputWindow
+from .loggingWindow        import LoggingWindow
 from .plotterOptionsWindow import PlotterOptionsWindow
-from .parameterWindow import ParameterWindow
+from .parameterWindow      import ParameterWindow
      
 from misc.status import Status
-from core.core import Core 
-from datatypes.misc.store import Store
-
-from tkinter    import Tk, Button, Label, OptionMenu, StringVar
+from core.core   import Core 
 
 class Main():
     def __init__(self):
@@ -26,8 +24,7 @@ class Main():
         # defining the toplevels
         input_window     = InputWindow()
         parameter_window = ParameterWindow()
-        dataStore        = Store()
-        model            = Core(dataStore)
+        core             = Core()
         logger           = LoggingWindow()
         plotter          = PlotterOptionsWindow()
         # defining variables used by tkinter widgets
@@ -40,9 +37,9 @@ class Main():
         current_subject.set("None")
         # other variables
         input            = ()    # receives the input from the input window
-        output           = {}    # receives the output from the model 
+        output           = {}    # receives the output from the core 
         # initializing parameter window
-        parameter_window.setParameters(model.get_parameters())
+        parameter_window.setParameters(core.get_parameters())
         parameter_window.display()
 
         ''' Gets the input from the input toplevel.
@@ -58,13 +55,13 @@ class Main():
             # interacting with the back-end
             parameters               = parameter_window.getParameters()
             parameters['estimation'] = input[-2]
-            model.updateParameters(parameters)      # only passing the estimation-rule
-            output                   = model.makeInput(input[:-2])  # receiving input from model
+            core.updateParameters(parameters)      # only passing the estimation-rule
+            output                   = core.makeInput(input[:-2])  # receiving input from core
             output_path              = input[-1]                      # the path to output directory
             # interacting with the parameter-window
-            parameter_window.setParameters(model.get_parameters())
+            parameter_window.setParameters(core.get_parameters())
             parameter_window.display()
-            # updating data-store
+            # updating data
             updateSubjects()
             # logging
             time_taken                  = time.process_time() - start
@@ -74,11 +71,11 @@ class Main():
         def changeEstimationRule():
             start = time.process_time()
             # interacting with the input window
-            input                  = input_window.getInput()
-            # interacting with the model
-            output                 = model.updateParameters({"estimation":input[-2]})
+            input                       = input_window.getInput()
+            # interacting with the core
+            output                      = core.updateParameters({"estimation":input[-2]})
             # interacting with the parameter-window
-            parameter_window.setParameters(model.get_parameters())
+            parameter_window.setParameters(core.get_parameters())
             parameter_window.display()
             # logging
             time_taken                  = time.process_time() - start
@@ -87,10 +84,10 @@ class Main():
 
         def updateParameters():
             start                       = time.process_time()
-            # interacting with the model
-            output                      = model.updateParameters(dic=parameter_window.updateParameters())
+            # interacting with the core
+            output                      = core.updateParameters(dic=parameter_window.updateParameters())
             # interacting with the parameter-window
-            parameter_window.setParameters(model.get_parameters())
+            parameter_window.setParameters(core.get_parameters())
             parameter_window.display()
             time_taken                  = time.process_time() - start
             # logging
@@ -102,10 +99,10 @@ class Main():
                 logger.putLog(status=Status(False, error="Select a Preprocessed-BOLD Timeseries to retrieve HRF"))
             else:
                 start                       = time.process_time()
-                model.updateParameters(dic=parameter_window.updateParameters())
-                bold_ts                     = dataStore.get_time_series(current.get())
-                output                      = model.retrieveHRF(bold_ts)
-                # updating data-store
+                core.updateParameters(dic=parameter_window.updateParameters())
+                bold_ts                     = core.get_time_series(current.get())
+                output                      = core.retrieveHRF(bold_ts)
+                # updating data
                 updateValues(log=False)
                 # logging
                 time_taken                  = time.process_time() - start 
@@ -117,9 +114,9 @@ class Main():
                 logger.putLog(status=Status(False, error="Select an HRF Timeseries to retrieve parameters"))
             else:
                 start                       = time.process_time()
-                # interacting with the model
-                output                      = model.getHRFParameters(dataStore.get_time_series(current.get()))
-                # updating data-store
+                # interacting with the core
+                output                      = core.getHRFParameters(core.get_time_series(current.get()))
+                # updating data
                 updateValues(log=False)
                 # logging
                 time_taken                  = time.process_time() - start 
@@ -131,9 +128,9 @@ class Main():
                 logger.putLog(status=Status(False, error="Select an HRF Timeseries to deconvolve BOLD"))
             else:
                 start                       = time.process_time()
-                # interacting with the model
-                output                      = model.deconvolveHRF(dataStore.get_time_series(current.get()))
-                # updating data-store
+                # interacting with the core
+                output                      = core.deconvolveHRF(core.get_time_series(current.get()))
+                # updating data
                 updateValues(log=False)
                 # logging
                 time_taken                  = time.process_time() - start 
@@ -141,8 +138,8 @@ class Main():
                 logger.putLog(status=output)
 
         def updatePlots():
-            # interacting with the model
-            plotables                   = dataStore.get_plotables(current_subject.get())
+            # interacting with the core
+            plotables                   = core.get_plotables(current_subject.get())
             # logging
             if plotables == None:
                 logger.putLog(status=Status(False, error="Please select a subject"))
@@ -154,7 +151,7 @@ class Main():
         def getInfo():
             try:
                 if len(current.get().split("_")) == 3:
-                    logger.putLog(data_info=dataStore.get_info(current.get()))
+                    logger.putLog(data_info=core.get_store_info(current.get()))
                 else:
                     logger.putLog(status = Status(False, error="Select a valid input to get information")) 
             except: 
@@ -167,7 +164,7 @@ class Main():
                         out = output_path 
                     else:
                         out = os.cwd() 
-                    if dataStore.save_info(current.get(), out):
+                    if core.save_info(current.get(), out):
                         logger.putLog(status = Status(True, info="File saved successfully"))   
                     else:
                         logger.putLog(status = Status(False, error="Unable to save file"))      
@@ -190,7 +187,7 @@ class Main():
             return out
         
         def updateSubjects():
-            temp                        = [i.get_subject_index() for i in dataStore.get_subjects()]
+            temp                        = list(core.get_subjects())
             temp.append                 ("None")
             self.subjects               = add_new(self.subjects, temp)
             self.subjects               = sorted(self.subjects)
@@ -198,7 +195,7 @@ class Main():
             subjectOptions.grid         (row=0,column=1,padx=(30,30),pady=(5,5))
         
         def updateValues(log=True):
-            temp                        = dataStore.get_data_labels(current_subject.get())
+            temp                        = core.get_data_labels(current_subject.get())
             if temp == None:
                 logger.putLog(status=Status(False, error="Please select a subject"))
             else:
@@ -217,7 +214,7 @@ class Main():
         changeParameterButton           = Button    (root, text="Update Parameters",       command=updateParameters,      height = 1, width = 20)
         retrieveHRFButton               = Button    (root, text="Retrieve HRF",            command=retrieveHRF,           height = 1, width = 20)
         retrieveHRFParametersButton     = Button    (root, text="Retrieve HRF Parameters", command=retrieveHRFParameters, height = 1, width = 20)
-        deconvolveHRFButton             = Button    (root, text="Deconvolve HRF",          command=deconvolveHRF,         height = 1, width = 20)
+        deconvolveHRFButton             = Button    (root, text="Deconvolve BOLD",         command=deconvolveHRF,         height = 1, width = 20)
         updatePlotsButton               = Button    (root, text="Update Plots",            command=updatePlots,           height = 1, width = 20)
         changeEstimationRule            = Button    (root, text="Set Estimation Rule",     command=changeEstimationRule,  height = 1, width = 20)
         getValueInfo                    = Button    (root, text="Get Info",                command=getInfo,               height = 1, width = 20)

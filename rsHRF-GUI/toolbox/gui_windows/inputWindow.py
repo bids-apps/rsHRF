@@ -1,5 +1,5 @@
 import os
-from tkinter import Toplevel, Checkbutton, IntVar, Button, filedialog, NORMAL, DISABLED, OptionMenu, StringVar, Label
+from tkinter       import Toplevel, Checkbutton, IntVar, Button, filedialog, NORMAL, DISABLED, OptionMenu, StringVar, Label
 
 
 class InputWindow():
@@ -35,8 +35,8 @@ class InputWindow():
             else:
                 self.input_file = filedialog.askopenfilename(initialdir=os.getcwd(), title="Input File Path", filetypes=(("nifti files", "*.nii"), ("nifti files", "*.nii.gz"), ("gifti files", "*.gii"), ("gifti files", "*.gii.gz")))
                 maskFormat.configure(state=DISABLED)
-                try: 
-                    self.file_type = "." + self.input_file.split('.',1)[1]
+                try:
+                    self.file_type = os.path.splitext(self.input_file)[1]
                 except: 
                     self.file_type = ()             
             try: 
@@ -96,9 +96,9 @@ class InputWindow():
 
     def getInput(self):
         if self.inputFormatVar.get() * self.maskFormatVar.get():
-            mode = "bids w/ atlas"
-        elif self.inputFormatVar.get():
             mode = "bids"
+        elif self.inputFormatVar.get():
+            mode = "bids w/ atlas"
         else:
             mode = "file"
         return (self.input_file, self.mask_file, self.file_type, mode, self.estimationOption.get(), self.output_dir)

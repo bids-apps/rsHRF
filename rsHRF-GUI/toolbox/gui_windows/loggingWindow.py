@@ -88,27 +88,27 @@ class LoggingWindow():
                 self.text.insert(INSERT, \
                     "   :- " + "Type of Data: BOLD Time Series\n" + 
                     "   :- " + "Subject: " + data_info["Subject"] + "\n"
+                    "   :- " + "Input File: " + data_info["Input File"] + "\n"
                     )
-                self.text.tag_add("line2", str(self.lineNum+1) + ".03", str(self.lineNum+1) + ".14")
+                self.lineNum += 1
             elif data_info["Type"] == "Preprocessed-BOLD":
                 self.text.insert(INSERT, \
                     "   :- " + "Type of Data: Preprocessed-BOLD Time Series\n" + 
-                    "   :- " + "Subject: " + data_info["Subject"] + "\n"
+                    "   :- " + "Subject: " + data_info["Subject"] + "\n" +
+                    "   :- " + "Mask File: " + data_info["Mask File"] + "\n" + 
+                    "   :- " + "Associated Raw BOLD: " + data_info["Associated Raw BOLD"] + "\n"
                     )
-                self.text.tag_add("line2", str(self.lineNum+1) + ".03", str(self.lineNum+1) + ".14")
+                self.lineNum += 2
             elif data_info["Type"] == "HRF":
                 self.text.insert(INSERT, \
                     "   :- " + "Type of Data: Hemodynamic Response Function Time Series\n" + 
                     "   :- " + "Associated BOLD: " + data_info["Associated BOLD"] + "\n"
                     )
-                self.text.tag_add("line2", str(self.lineNum+1) + ".03", str(self.lineNum+1) + ".22")
             elif data_info["Type"] == "Deconvolved-BOLD":
                 self.text.insert(INSERT, \
                     "   :- " + "Type of Data: Deconvolved BOLD Time Series\n" + 
                     "   :- " + "Associated HRF: " + data_info["Associated HRF"] + "\n"
                     )
-                self.text.tag_add("line2", str(self.lineNum+1) + ".03", str(self.lineNum+1) + ".21")
-            self.text.tag_add("type", str(self.lineNum) + ".03", str(self.lineNum) + ".19")
             self.text.tag_config("type", foreground="azure")
             self.text.tag_config("line2", foreground="azure")
             self.lineNum += 2 
