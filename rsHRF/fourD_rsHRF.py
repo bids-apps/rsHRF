@@ -1,6 +1,6 @@
 import os
 import matplotlib
-# matplotlib.use('agg')
+matplotlib.use('agg')
 import numpy             as np
 import nibabel           as nib
 import scipy.io          as sio

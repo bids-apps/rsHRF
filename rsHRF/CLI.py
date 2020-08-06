@@ -1,11 +1,14 @@
-import sys
+HEADimport sys
 import numpy   as np
 import os.path as op
 from argparse      import ArgumentParser
 from bids.grabbids import BIDSLayout
 
 from rsHRF import spm_dep, fourD_rsHRF
+import os
 
+
+    
 import warnings
 warnings.filterwarnings("ignore")
 
