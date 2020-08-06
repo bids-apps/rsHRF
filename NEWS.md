@@ -1,4 +1,4 @@
-# rsHRF 1.2.0
+# rsHRF 1.2.1
 ## 6th August, 2020
 
 * `[Added]` Standalone time-series input (.txt).
