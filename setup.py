@@ -34,8 +34,8 @@ setup(
     license="MIT",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    author="Madhur Tandon",
-    author_email="madhurtandon23@gmail.com",
+    author="Madhur Tandon, Amogh Johri",
+    author_email="madhurtandon23@gmail.com, amogh.johri@iiitb.org",
     url="https://github.com/BIDS-Apps/rsHRF",
     classifiers=(
         "Programming Language :: Python :: 3",
@@ -44,7 +44,7 @@ setup(
     ),
     include_package_data=True,
     zip_safe=False,
-    python_requires=">=3.5",
+    python_requires=">=3.7",
     install_requires=["numpy", "nibabel", "matplotlib", "scipy", "pybids==0.6.5", "pandas", "patsy", "duecredit", "joblib"],
     cmdclass={
         'verify': VerifyVersionCommand,
