@@ -1,12 +1,13 @@
+import sys
+import numpy   as np
 import os.path as op
-from argparse import ArgumentParser
+from argparse      import ArgumentParser
 from bids.grabbids import BIDSLayout
-import numpy as np
-import warnings
+
 from rsHRF import spm_dep, fourD_rsHRF
-import os
 
-
+import warnings
+warnings.filterwarnings("ignore")
 
 with open(op.join(op.dirname(op.realpath(__file__)), "VERSION"), "r") as fh:
     __version__ = fh.read().strip('\n')
@@ -17,6 +18,9 @@ def get_parser():
                                         'voxel-wise signal')
 
     group_input = parser.add_mutually_exclusive_group(required=True)
+
+    group_input.add_argument('--ts', action='store', type=op.abspath,
+                             help='the absolute path to a single data file')
 
     group_input.add_argument('--input_file', action='store', type=op.abspath,
                              help='the absolute path to a single data file')
@@ -32,7 +36,7 @@ def get_parser():
     parser.add_argument('--n_jobs', action='store', type=int, default=-1,
                         help='the number of parallel processing elements')
 
-    parser.add_argument('-v', '--version', action='version', version='rsHRF version {}'.format(__version__))
+    parser.add_argument('-V', '--version', action='version', version='rsHRF version {}'.format(__version__))
 
     parser.add_argument('--analysis_level', help='Level of the analysis that will be performed. '
                         'Multiple participant level analyses can be run independently '
@@ -46,7 +50,7 @@ def get_parser():
                              'participants can be specified with a space separated list.',
                         nargs="+")
 
-    group_mask = parser.add_mutually_exclusive_group(required=True)
+    group_mask = parser.add_mutually_exclusive_group(required=False)
 
     group_mask.add_argument('--atlas', action='store', type=op.abspath,
                             help='the absolute path to a single atlas file')
@@ -61,10 +65,10 @@ def get_parser():
                             choices=['canon2dd', 'sFIR', 'FIR', 'fourier', 'hanning', 'gamma'], required=True,
                             help='Choose the estimation procedure from '
                                  'canon2dd (canonical shape with 2 derivatives), '
-                                 'sFIR (smoothed Finite Impulse Response) , '
-                                 'FIR (Finite Impulse Response)'
-                                 'fourier (Fourier Basis Set)'
-                                 'hanning (Fourier Basis w Hanning)'
+                                 'sFIR (smoothed Finite Impulse Response), '
+                                 'FIR (Finite Impulse Response), '
+                                 'fourier (Fourier Basis Set), '
+                                 'hanning (Fourier Basis w Hanning), '
                                  'gamma (Gamma Basis Set)')
 
     group_para.add_argument('--passband', action='store', type=float, nargs=2, metavar=('LOW_FREQ','HIGH_FREQ'),
@@ -120,14 +124,20 @@ def run_rsHRF():
 
     para = arg_groups['Parameters']
 
-    if args.input_file is not None and args.analysis_level:
-        parser.error('analysis_level cannot be used with --input_file, do not supply it')
+    if (args.input_file is not None or args.ts is not None) and args.analysis_level:
+        parser.error('analysis_level cannot be used with --input_file or --ts, do not supply it')
 
-    if args.input_file is not None and args.participant_label:
-        parser.error('participant_labels are not to be used with --input_file, do not supply it')
+    if (args.input_file is not None or args.ts is not None) and args.participant_label:
+        parser.error('participant_labels are not to be used with --input_file or --ts, do not supply it')
 
     if args.input_file is not None and args.brainmask:
         parser.error('--brainmask cannot be used with --input_file, use --atlas instead')
+
+    if args.ts is not None and (args.brainmask or args.atlas):
+        parser.error('--atlas or --brainmask cannot be used with --ts, do not supply it')
+
+    if args.bids_dir is not None and not (args.brainmask or args.atlas):
+        parser.error('--atlas or --brainmask needs to be supplied with --bids_dir')
 
     if args.bids_dir is not None and not args.analysis_level:
         parser.error('analysis_level needs to be supplied with bids_dir, choices=[participant]')
@@ -137,45 +147,55 @@ def run_rsHRF():
 
     if args.atlas is not None and (not args.atlas.endswith(('.nii', '.nii.gz','.gii', '.gii.gz'))):
         parser.error('--atlas should end with .gii, .gii.gz, .nii or .nii.gz')
-    
-    if args.input_file is not None and args.atlas is not None:
 
-        if args.output_dir is None:
-            parser.error('the following arguments are required: --output_dir')
+    if args.ts is not None and (not args.ts.endswith(('.txt'))):
+        parser.error('--ts file should end with .txt')
 
-        if (args.input_file.endswith(('.nii', '.nii.gz')) and args.atlas.endswith(('.gii', '.gii.gz'))) or (args.input_file.endswith(('.gii', '.gii.gz')) and args.atlas.endswith(('.nii', '.nii.gz'))):
-             parser.error('--atlas and input_file should be of the same type [NIfTI or GIfTI]')
+    if args.ts is not None:
+        file_type = op.splitext(args.ts)
+        if para['TR'] <= 0:
+            parser.error('Please supply a valid TR using -TR argument')
         else:
-            # carry analysis with input_file and atlas
-            file_type = op.splitext(args.input_file)
-            if file_type[-1] == ".gz":
-                file_type = op.splitext(file_type[-2])[-1] + file_type[-1]
-            else:
-                file_type = file_type[-1]
+            TR = para['TR']
+        para['dt'] = para['TR'] / para['T']
+        para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
+                                np.fix(para['max_onset_search'] / para['dt']) + 1,
+                                dtype='int')
+        fourD_rsHRF.demo_rsHRF(args.ts, None, args.output_dir, para, args.n_jobs, file_type, mode='time-series')
 
-            if ".nii" in file_type:
-                TR = (spm_dep.spm.spm_vol(args.input_file).header.get_zooms())[-1]
+    if args.input_file is not None:
+        if args.atlas is not None:
+            if (args.input_file.endswith(('.nii', '.nii.gz')) and args.atlas.endswith(('.gii', '.gii.gz'))) or (args.input_file.endswith(('.gii', '.gii.gz')) and args.atlas.endswith(('.nii', '.nii.gz'))):
+                parser.error('--atlas and input_file should be of the same type [NIfTI or GIfTI]')
+        
+        # carry analysis with input_file and atlas
+        file_type = op.splitext(args.input_file)
+        if file_type[-1] == ".gz":
+            file_type = op.splitext(file_type[-2])[-1] + file_type[-1]
+        else:
+            file_type = file_type[-1]
+        if ".nii" in file_type:
+            TR = (spm_dep.spm.spm_vol(args.input_file).header.get_zooms())[-1]
+        else:
+            if para['TR'] == -1:
+                parser.error('Please supply a valid TR using -TR argument')
             else:
-                if para['TR'] == -1:
-                    parser.error('Please supply a valid TR using -TR argument')
-                else:
-                    TR = para['TR']
+                TR = para['TR']
+        if TR <= 0:
+            if para['TR'] <= 0:
+                parser.error('Please supply a valid TR using -TR argument')
+        else:
+            if para['TR'] == -1:
+                para['TR'] = TR
+            elif para['TR'] <= 0:
+                print('Invalid TR supplied, using implicit TR: {0}'.format(TR))
+                para['TR'] = TR
+        para['dt'] = para['TR'] / para['T']
+        para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
+                                np.fix(para['max_onset_search'] / para['dt']) + 1,
+                                dtype='int')
+        fourD_rsHRF.demo_rsHRF(args.input_file, args.atlas, args.output_dir, para, args.n_jobs, file_type, mode='input')
 
-            if TR <= 0:
-                if para['TR'] <= 0:
-                    parser.error('Please supply a valid TR using -TR argument')
-            else:
-                if para['TR'] == -1:
-                    para['TR'] = TR
-                elif para['TR'] <= 0:
-                    print('Invalid TR supplied, using implicit TR: {0}'.format(TR))
-                    para['TR'] = TR
-
-            para['dt'] = para['TR'] / para['T']
-            para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
-                                    np.fix(para['max_onset_search'] / para['dt']) + 1,
-                                    dtype='int')
-            fourD_rsHRF.demo_4d_rsHRF(args.input_file, args.atlas, args.output_dir, para, args.n_jobs, file_type, mode='input w/ atlas')
     
     if args.bids_dir is not None and args.atlas is not None:
         # carry analysis with bids_dir and 1 atlas
@@ -201,6 +221,7 @@ def run_rsHRF():
                          'Please make sure to have at least one file of the above type '
                          'in the BIDS specification')
         else:
+            num_errors = 0
             for file_count in range(len(all_inputs)):
                 try:
                     TR = layout.get_metadata(all_inputs[file_count].filename)['RepetitionTime']
@@ -211,7 +232,18 @@ def run_rsHRF():
                 para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
                                         np.fix(para['max_onset_search'] / para['dt']) + 1,
                                         dtype='int')
-                fourD_rsHRF.demo_4d_rsHRF(all_inputs[file_count], args.atlas, args.output_dir, para, args.n_jobs, mode='bids w/ atlas')
+                num_errors += 1
+                try:
+                    fourD_rsHRF.demo_rsHRF(all_inputs[file_count], args.atlas, args.output_dir, para, args.n_jobs, file_type, mode='bids w/ atlas')
+                    num_errors -=1
+                except ValueError as err:
+                    print(err.args[0])
+                except:
+                    print("Unexpected error:", sys.exc_info()[0])
+            success = len(all_inputs) - num_errors
+            if success == 0:
+                raise RuntimeError('Dimensions were inconsistent for all input-mask pairs; \n'
+                                   'No inputs were processed!')
 
     if args.bids_dir is not None and args.brainmask:
         # carry analysis with bids_dir and brainmask
@@ -230,7 +262,6 @@ def run_rsHRF():
 
         all_inputs = layout.get(modality='func', subject=subjects_to_analyze, task='rest', type='preproc', extensions=['nii', 'nii.gz'])
         all_masks = layout.get(modality='func', subject=subjects_to_analyze, task='rest', type='brainmask', extensions=['nii', 'nii.gz'])
-
         if not all_inputs != []:
             parser.error('There are no files of type *preproc.nii / *preproc.nii.gz '
                          'Please make sure to have at least one file of the above type '
@@ -264,8 +295,9 @@ def run_rsHRF():
             parser.error('The mask and input files should have the same prefix for correspondence. '
                          'Please consider renaming your files')
         else:
+            num_errors = 0
             for file_count in range(len(all_inputs)):
-                file_type = os.path.splitext(all_inputs[file_count].filename)[1]
+                file_type = op.splitext(all_inputs[file_count].filename)[1]
                 if file_type == ".nii" or file_type == ".nii.gz":
                     try:
                         TR = layout.get_metadata(all_inputs[file_count].filename)['RepetitionTime']
@@ -282,8 +314,19 @@ def run_rsHRF():
                 para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
                                         np.fix(para['max_onset_search'] / para['dt']) + 1,
                                         dtype='int')
-
-                fourD_rsHRF.demo_4d_rsHRF(all_inputs[file_count], all_masks[file_count], args.output_dir, para, args.n_jobs, mode='bids')
+                num_errors += 1
+                try:
+                    fourD_rsHRF.demo_rsHRF(all_inputs[file_count], all_masks[file_count], args.output_dir, para, args.n_jobs, mode='bids')
+                    num_errors -=1
+                except ValueError as err:
+                    print(err.args[0])
+                except:
+                    print("Unexpected error:", sys.exc_info()[0])
+            success = len(all_inputs) - num_errors
+            if success == 0:
+                raise RuntimeError('Dimensions were inconsistent for all input-mask pairs; \n'
+                                   'No inputs were processed!')
+                
 
 
 def main():
