@@ -11,10 +11,10 @@ def wgr_regress(y, X):
     if R.ndim == 0:
         p = 0
     elif R.ndim == 1:
-        p = abs(R[0]) > 0
+        p = int(abs(R[0]) > 0)
     else:
         if np.amin(R.shape) == 1:
-            p = abs(R[0]) > 0
+            p = int(abs(R[0]) > 0)
         else:
             p = np.sum(np.abs(np.diagonal(R)) > abs(max(n, ncolX)*np.spacing(R[0][0])))
     if p < ncolX:

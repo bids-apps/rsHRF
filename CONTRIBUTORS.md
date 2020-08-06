@@ -5,7 +5,7 @@
 1. Make sure you have cloned this repository. If not, do so by using ``git clone https://github.com/BIDS-Apps/rsHRF.git``. Switch into this directory and make sure to be on the master branch.
 2. Go to ``circleci.com``, log in / link your GitHub account and click on the top-left corner to switch organization to ``BIDS-Apps``
 3. Follow the project ``rsHRF`` from the ``Add Project`` menu, 4th button from the top left.
-4. If you feel that a significant change has been made to the App and that it is ready to be deployed and pushed to the users, open the ``VERSION`` file, change the number there to the version you want the App to ship with and save the file.
+4. If you feel that a significant change has been made to the App and that it is ready to be deployed and pushed to the users, open the ``VERSION`` file, change the number there to the version you want the App to ship with and save the file. It is advisable to follow [semantic-versioning](https://semver.org/).
 5. Add all the changed files and the newly changed ``VERSION`` file by using ``git add`` on the cloned repository.
 6. Write a commit message using ``git commit -m "release x.x.x"`` where ``x.x.x`` is the version that you wrote in the ``VERSION`` file.
 7. Run ``git push origin master`` to push these commits on this repository.
