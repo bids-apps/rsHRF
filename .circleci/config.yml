@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/python:3.7
+      - image: circleci/python:3.6
     steps:
       - checkout
       - run:
@@ -21,7 +21,7 @@ jobs:
           name: init .pypirc
           command: |
             echo -e "[pypi]" >> ~/.pypirc
-            echo -e "username = madhurt" >> ~/.pypirc
+            echo -e "username = amogh" >> ~/.pypirc
             echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
       - run:
           name: create packages

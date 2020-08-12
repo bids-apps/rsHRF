@@ -5,7 +5,7 @@
 This App can be used as a *standalone Python Package* OR as a *BIDS-App through Dockers*. 
 
 #### Standalone Python Package (Command Line Interface)
-To be used as a command line tool, ensure that you have ``Python>=3.7`` and use the command ``pip3 install rsHRF``. This command takes care of all the necessary dependencies so that the tool is usable straight out of the box. Once done, run ``rsHRF --help`` to see the required positional and optional arguments. The command line for the app installed in this way is ``rsHRF``.
+To be used as a command line tool, ensure that you have ``Python>=3.6`` and use the command ``pip3 install rsHRF``. This command takes care of all the necessary dependencies so that the tool is usable straight out of the box. Once done, run ``rsHRF --help`` to see the required positional and optional arguments. The command line for the app installed in this way is ``rsHRF``.
 
 #### BIDS-App through Dockers (Command Line Interface)
 To be used as a BIDS-App, ensure that you have docker installed. The image for the app needs to be pulled which can be done via the command ``docker pull bids/rshrf``. The App can then be run by launching an instance / running a container of this image via the command ``docker run -ti --rm bids/rshrf`` followed by the options for the app.
