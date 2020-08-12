@@ -230,7 +230,6 @@ class Core():
             # inputs for retrieving the HRF
             bold_sig  = bold_pre_ts.get_ts()
             para      = self.parameters.get_parameters()
-            bold_sig                       = bold_sig[:,:3]                                         # confining it to 3 voxels for analysis
             if not (para['estimation'] == 'sFIR' or para['estimation'] == 'FIR'):
                 # estimate HRF for the fourier / hanning / gamma / cannon basis functions
                 bf = basis_functions.basis_functions.get_basis_function(bold_sig.shape, para)       # obtaining the basis set
