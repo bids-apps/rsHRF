@@ -4,11 +4,9 @@ import os.path as op
 from argparse      import ArgumentParser
 from bids.grabbids import BIDSLayout
 
-from rsHRF import spm_dep, fourD_rsHRF
-import os
+from .      import spm_dep, fourD_rsHRF
+from .rsHRF_GUI import run 
 
-
-    
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -33,8 +31,11 @@ def get_parser():
                                   '(sub-XXXXX folders should be found at the '
                                   'top level in this folder).')
 
+    group_input.add_argument('--GUI', action='store_true',
+                            help='to execute the toolbox in GUI mode')
+
     parser.add_argument('--output_dir', action='store', type=op.abspath,
-                        help='the output path for the outcomes of processing', required=True)
+                        help='the output path for the outcomes of processing')
 
     parser.add_argument('--n_jobs', action='store', type=int, default=-1,
                         help='the number of parallel processing elements')
@@ -65,7 +66,7 @@ def get_parser():
     group_para = parser.add_argument_group('Parameters')
 
     group_para.add_argument('--estimation', action='store',
-                            choices=['canon2dd', 'sFIR', 'FIR', 'fourier', 'hanning', 'gamma'], required=True,
+                            choices=['canon2dd', 'sFIR', 'FIR', 'fourier', 'hanning', 'gamma'],
                             help='Choose the estimation procedure from '
                                  'canon2dd (canonical shape with 2 derivatives), '
                                  'sFIR (smoothed Finite Impulse Response), '
@@ -126,6 +127,20 @@ def run_rsHRF():
         arg_groups[group.title] = group_dict
 
     para = arg_groups['Parameters']
+
+    nargs = len(sys.argv)
+
+    if (not args.GUI) and (args.output_dir is None):
+        parser.error('--output_dir is required when executing in command-line interface')
+
+    if (not args.GUI) and (args.estimation is None):
+        parser.error('--estimation rule is required when executing in command-line interface')
+
+    if (args.GUI):
+        if (nargs == 2):
+            run.run()
+        else:
+            parser.error('--no other arguments should be supplied with --GUI')
 
     if (args.input_file is not None or args.ts is not None) and args.analysis_level:
         parser.error('analysis_level cannot be used with --input_file or --ts, do not supply it')

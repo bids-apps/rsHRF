@@ -24,6 +24,7 @@ RUN apk add --no-cache zlib libjpeg-turbo-dev libpng-dev freetype-dev lcms2-dev 
 	ln -s /usr/include/locale.h /usr/include/xlocale.h \
 	&& pip3 install wheel \
 	&& pip3 install matplotlib \
+	&& pip3 install mpld3 \
 	&& pip3 install joblib \
 	&& pip3 install numpy \
 	&& pip3 install scipy==1.3.3 \
