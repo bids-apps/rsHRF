@@ -5,7 +5,7 @@ import scipy.io as sio
 from bids.grabbids  import BIDSLayout
 from scipy          import stats, signal
 from scipy.sparse   import lil_matrix
-from rsHRF          import spm_dep, processing, parameters, basis_functions, utils
+from ...            import spm_dep, processing, parameters, basis_functions, utils
 
 from ..datatypes.timeseries.hrf               import HRF
 from ..datatypes.timeseries.bold_raw          import BOLD_Raw
@@ -233,11 +233,11 @@ class Core():
             if not (para['estimation'] == 'sFIR' or para['estimation'] == 'FIR'):
                 # estimate HRF for the fourier / hanning / gamma / cannon basis functions
                 bf = basis_functions.basis_functions.get_basis_function(bold_sig.shape, para)       # obtaining the basis set
-                beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(bold_sig, para, [], 4, bf)
+                beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(bold_sig, para, [], -1, bf)
                 hrfa = np.dot(bf, beta_hrf[np.arange(0, bf.shape[1]), :])
             else:
                 # estimate HRF for FIR and sFIR
-                beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(bold_sig, para, [], 4)
+                beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(bold_sig, para, [], -1)
                 hrfa = beta_hrf
             # instantiating the time-series objects
             hrf = HRF(label="HRF", ts=hrfa, subject_index=subject_index, para=self.parameters)
