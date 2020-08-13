@@ -12,6 +12,9 @@ To be used as a BIDS-App, ensure that you have docker installed. The image for t
 
 Running ``rsHRF`` after installing as a Python Package OR running ``docker run -ti --rm bids/rshrf`` after pulling the image through docker are equivalent. Thus, ``rsHRF --help`` is similar to ``docker run -ti --rm bids/rshrf --help``.
 
+#### Graphical User Interface
+To run the the application in a Graphical User Interface, run ``rsHRF --GUI`` or ``docker run -ti --rm bids/rshrf --GUI``. For more information regarding the GUI, click [here](https://github.com/BIDS-Apps/rsHRF/blob/master/rsHRF/rsHRF_GUI/documentation/rsHRF-GUI-User-Manual.pdf).
+
 ### Usage
 ----
 In essence, the whole usage of the application can be broken down to 7 major steps:

@@ -1,3 +1,7 @@
+# rsHRF 1.3.0
+## 13th August, 2020
+* `[Added]` Graphical User Interface.
+
 # rsHRF 1.2.2
 ## 10th August, 2020
 
