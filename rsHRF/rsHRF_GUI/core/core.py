@@ -203,11 +203,7 @@ class Core():
         if not subject.is_present("Preprocessed-BOLD", (self.parameters, mask_file, bold_ts)):
             # pre-processing the time-series
             bold_sig = stats.zscore(data1[:, voxel_ind], ddof=1)
-            passband = list(self.parameters.get_passband())
             bold_sig = np.nan_to_num(bold_sig)
-            bold_sig = processing. \
-                rest_filter. \
-                rest_IdealFilter(bold_sig, self.parameters.get_TR(), self.parameters.get_passband())
             # instantiating the time-series objects
             bold_pre_ts = BOLD_Preprocessed(label="Preprocessed-BOLD", ts=np.array(bold_sig), para=self.parameters, subject_index=subject.get_subject_index())
             bold_pre_ts.set_BOLD_Raw(bold_ts)   # the Preprocessed BOLD Time-series is associated to a particular Raw BOLD Time-Series
@@ -229,6 +225,9 @@ class Core():
         if not subject.is_present("HRF", (self.parameters, bold_pre_ts)): 
             # inputs for retrieving the HRF
             bold_sig  = bold_pre_ts.get_ts()
+            bold_sig  = processing. \
+                        rest_filter. \
+                        rest_IdealFilter(bold_sig, self.parameters.get_TR(), self.parameters.get_passband_deconvolve())
             para      = self.parameters.get_parameters()
             if not (para['estimation'] == 'sFIR' or para['estimation'] == 'FIR'):
                 # estimate HRF for the fourier / hanning / gamma / cannon basis functions
@@ -289,12 +288,15 @@ class Core():
         """
         subject_index = hrf.get_subject_index()                                     # gets the subject-index associated to the preprocessed BOLD Time-series
         subject       = self.dataStore.get_subject_by_index(subject_index)          # gets the subject from the index
+        para          = self.parameters.get_parameters()    
         # if the HRF has already been retrieved for this particular set of inputs
-        if not subject.is_present("BOLD-Deconvolved", hrf): 
+        if not subject.is_present("BOLD-Deconvolved", (self.parameters, hrf)): 
             # inputs for retrieving the deconvolved BOLD
             hrfa              = hrf.get_ts()
             bold_sig          = hrf.get_associated_BOLD().get_ts()
-            para              = hrf.get_parameters().get_parameters()
+            bold_sig          = processing. \
+                                rest_filter. \
+                                rest_IdealFilter(bold_sig, self.parameters.get_TR(), self.parameters.get_passband_deconvolve())
             event_bold        = hrf.get_event_bold()
             nvar              = hrfa.shape[1]
             nobs              = bold_sig.shape[0]

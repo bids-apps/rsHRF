@@ -11,7 +11,7 @@ class ParameterWindow():
         # get screen width and height
         screen_width  = self.window.winfo_screenwidth()
         screen_height = self.window.winfo_screenheight()
-        self.window.geometry("350x390+%d+%d" % (screen_width*(280.0/1900), (((1040.0-220)/1000)*screen_height)-390))
+        self.window.geometry("350x420+%d+%d" % (screen_width*(280.0/1900), (((1040.0-220)/1000)*screen_height)-390))
         
     def updateParameters(self):
         for i in range(len(self.labels)):
@@ -37,7 +37,7 @@ class ParameterWindow():
         for each in self.parameters.keys():
             self.labels.append(Label(self.window, text=each))
             self.entries.append(Entry(self.window, width=15))
-            if each == "passband":
+            if each == "passband" or each == "passband_deconvolve":
                 self.entries[-1].insert(0, str(self.parameters[each][0]) + "," + str(self.parameters[each][1]))
             else:
                 self.entries[-1].insert(0, str(self.parameters[each]))
