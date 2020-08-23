@@ -76,6 +76,9 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
         nobs = data1.shape[0]
         bold_sig = stats.zscore(data1, ddof=1)
     bold_sig = np.nan_to_num(bold_sig)
+    bold_sig_deconv = processing. \
+                      rest_filter. \
+                      rest_IdealFilter(bold_sig, para['TR'], para['passband_deconvolve'])   
     bold_sig = processing. \
                rest_filter. \
                rest_IdealFilter(bold_sig, para['TR'], para['passband'])   
@@ -108,7 +111,7 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
         H = np.fft.fft(
             np.append(hrf,
                       np.zeros((nobs - max(hrf.shape), 1))), axis=0)
-        M = np.fft.fft(bold_sig[:, voxel_id])
+        M = np.fft.fft(bold_sig_deconv[:, voxel_id])
         data_deconv[:, voxel_id] = \
             np.fft.ifft(H.conj() * M / (H * H.conj() + .1*np.mean((H * H.conj()))))
         event_number[:, voxel_id] = np.amax(event_bold[voxel_id].shape)

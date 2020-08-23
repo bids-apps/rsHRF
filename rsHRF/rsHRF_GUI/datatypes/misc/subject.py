@@ -104,9 +104,10 @@ class Subject():
             for each in self.BOLD_deconv:
                 # Determines whether the Deconvolved BOLD is already present
                 # Checks the associated HRF
-                if HRF.compareTimeSeries(each.get_associated_HRF()):
+                if para.compareParameters(each.get_parameters()) \
+                    and HRF.compareTimeSeries(each.get_associated_HRF()):
                     if getts :
-                        return eaach
+                        return each
                     return True
         return False
     

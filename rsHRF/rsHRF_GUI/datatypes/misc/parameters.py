@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 from copy           import deepcopy
 from ...misc.status import Status
@@ -9,25 +10,26 @@ class Parameters():
     """
     def __init__(self):
         # initialize default parameters
-        self.estimation       = 'canon2dd'
-        self.passband         = [0.01, 0.08]
-        self.TR               = 2.0 
-        self.localK           = 1
-        self.T                = 3
-        self.T0               = 1
-        self.TD_DD            = 2
-        self.AR_lag           = 1
-        self.thr              = 1
-        self.order            = 3
-        self.volterra         = 0
-        self.len              = 24      
-        self.temporal_mask    = []
-        self.min_onset_search = 4
-        self.max_onset_search = 8
-        self.dt               = self.TR/self.T
-        self.lag              = np.arange(np.fix(self.min_onset_search / self.dt),
-                                np.fix(self.max_onset_search / self.dt) + 1,
-                                dtype='int')
+        self.estimation          = 'canon2dd'
+        self.passband            = [0.01, 0.08]
+        self.passband_deconvolve = [0.0, sys.float_info.max]
+        self.TR                  = 2.0 
+        self.localK              = 1
+        self.T                   = 3
+        self.T0                  = 1
+        self.TD_DD               = 2
+        self.AR_lag              = 1
+        self.thr                 = 1
+        self.order               = 3
+        self.volterra            = 0
+        self.len                 = 24      
+        self.temporal_mask       = []
+        self.min_onset_search    = 4
+        self.max_onset_search    = 8
+        self.dt                  = self.TR/self.T
+        self.lag                 = np.arange(np.fix(self.min_onset_search / self.dt),
+                                   np.fix(self.max_onset_search / self.dt) + 1,
+                                   dtype='int')
 
     # getters
     def get_estimation(self):
@@ -35,6 +37,9 @@ class Parameters():
     
     def get_passband(self):
         return deepcopy(self.passband)
+
+    def get_passband_deconvolve(self):
+        return deepcopy(self.passband_deconvolve)
     
     def get_TR(self):
         return self.TR
@@ -106,6 +111,22 @@ class Parameters():
             return Status(False, error="Bad datatype for passband range")
         else:
                 self.passband = deepcopy(l)
+                return Status(True)
+    
+    def set_passband_deconvolve(self, l):
+        """ 
+        Takes a list (with two entries) as input and sets the 
+            passband-range
+        Checks whether both the values are non-negative 
+        """
+        try:
+            l = [float(i) for i in l.split(",")]
+            if l[0] < 0 or l[1] < 0:
+                return Status(False, error="Passband frequency values cannot be negative")
+        except:
+            return Status(False, error="Bad datatype for passband range")
+        else:
+                self.passband_deconvolve = deepcopy(l)
                 return Status(True)
     
     def set_TR(self, TR):
@@ -339,26 +360,27 @@ class Parameters():
         """
         Gets all the parameters in the form of a dictionary for rsHRF computation
         """
-        para                     = {}
-        para['estimation']       = self.estimation
-        para['passband']         = deepcopy(self.passband)
-        para['TR']               = self.TR
-        para['T']                = self.T 
-        para['localK']           = self.localK
-        para['T0']               = self.T0
-        para['AR_lag']           = self.AR_lag
-        para['thr']              = self.thr
-        para['len']              = self.len
-        para['temporal_mask']    = deepcopy(self.temporal_mask)
-        para['min_onset_search'] = self.min_onset_search
-        para['max_onset_search'] = self.max_onset_search
+        para                            = {}
+        para['estimation']              = self.estimation
+        para['passband']                = deepcopy(self.passband)
+        para['passband_deconvolve']     = deepcopy(self.passband_deconvolve)
+        para['TR']                      = self.TR
+        para['T']                       = self.T 
+        para['localK']                  = self.localK
+        para['T0']                      = self.T0
+        para['AR_lag']                  = self.AR_lag
+        para['thr']                     = self.thr
+        para['len']                     = self.len
+        para['temporal_mask']           = deepcopy(self.temporal_mask)
+        para['min_onset_search']        = self.min_onset_search
+        para['max_onset_search']        = self.max_onset_search
         if self.estimation == 'canon2dd':
-            para['TD_DD']        = self.TD_DD
-            para['Volterra']     = self.volterra
+            para['TD_DD']               = self.TD_DD
+            para['Volterra']            = self.volterra
         elif 'gamma' in self.estimation or 'fourier' in self.estimation:
-            para['order']        = self.order 
-        para['dt']               = self.dt 
-        para['lag']              = self.lag 
+            para['order']               = self.order 
+        para['dt']                      = self.dt 
+        para['lag']                     = self.lag 
         return para
         
     def set_parameters(self, dic):
@@ -370,6 +392,8 @@ class Parameters():
                 out  = self.set_estimation(dic[key])
             elif key == "passband":
                 out  = self.set_passband(dic[key])
+            elif key == "passband_deconvolve":
+                out  = self.set_passband_deconvolve(dic[key])
             elif key == "T":
                 out  = self.set_T(dic[key])
             elif key == "TR":

@@ -4,7 +4,7 @@ import os.path as op
 from argparse      import ArgumentParser
 from bids.grabbids import BIDSLayout
 
-from .      import spm_dep, fourD_rsHRF
+from rsHRF      import spm_dep, fourD_rsHRF
 from .rsHRF_GUI import run 
 
 import warnings
@@ -78,6 +78,10 @@ def get_parser():
     group_para.add_argument('--passband', action='store', type=float, nargs=2, metavar=('LOW_FREQ','HIGH_FREQ'),
                             default=[0.01, 0.08],
                             help='set intervals for bandpass filter, default is 0.01 - 0.08')
+
+    group_para.add_argument('--passband_deconvolve', action='store', type=float, nargs=2, metavar=('LOW_FREQ', 'HIGH_FREQ'),
+                            default=[0.0, sys.float_info.max],
+                            help='set intervals for bandpass filter (used while deconvolving BOLD), default is no-filtering')
 
     group_para.add_argument('-TR', action='store', type=float, default=-1,
                             help='set TR parameter')
