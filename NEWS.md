@@ -1,6 +1,6 @@
 # rsHRF 1.3.1
 ## 23rd August, 2020
-#  `[Added]` Application of passband filter for BOLD deconvolution (using `--passband_deconvolve` argument).
+*  `[Added]` Application of passband filter for BOLD deconvolution (using `--passband_deconvolve` argument).
 
 # rsHRF 1.3.0
 ## 13th August, 2020
