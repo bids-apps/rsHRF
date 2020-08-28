@@ -261,3 +261,90 @@ This class allows for making the GUI more interactive. It provides an inherent w
 - `get_dic(self)`
 
 ---
+
+## rsHRF_GUI.misc.gui_windows.inputWindow.InputWindow
+
+This class is concerned with accepting the input, determining whether its in a valid format, and subsequently passing a valid input forward.
+
+### Class Variables
+- `self.input_file` - stores the path to input file
+- `self.mask_file` - stores the path to mask file
+- `self.file_type` - stores the type of the file
+- `self.output_dir` - stores the path to the output directory
+
+--- 
+
+### Class Methods
+
+- `getInput(self)` - retrieves the input from the GUI and passes it to `main.py`
+
+--- 
+
+## rsHRF_GUI.misc.gui_windows.loggingWindow.LoggingWindow
+
+### Class Variables
+- `self.lineNum` - the position of the current line in the logging window
+- `self.text` - ScrolledText window
+
+---
+
+### Class Methods
+- `putLog(self, plotables=None, data_info=None, status=None)` - depending upon the input, appropriately formats it and displays it on the logging-screen.
+
+---
+
+## rsHRF_GUI.misc.gui_windows.parameterWindow.ParameterWindow
+
+### Class Variables
+- `self.window` - Toplevel instance
+- `self.parameters` - dictionary containing all the rsHRF parameters
+- `self.labels` - labels corresponding to each parameter
+- `self.entries` - current value of each parameter
+
+---
+
+### Class Methods
+- `updateParameters(self)` - updates the parameter dictionary
+- `getParameters(self)` - gets the parameter dictionary
+- `setParameters(self)` - sets the parameter dictionary
+- `display(self)` - puts the elements of the parameter dictionary into *self.labels* and *self.entries* in a way that they can be displayed by the logging-window.
+
+--- 
+
+## rsHRF_GUI.misc.gui_windows.plotterOptionsWindow.PlotterOptionsWindow
+
+### Class Variables
+- `self.plotterScreen` - PlotterWindow instance
+- `self.numberOfPlots` - the number of plots on the plotter-screen
+- `self.plot` - string corresponding to the time-series which is to be plotted
+- `self.plotVal` - voxel value of the time-series that is to be plotted
+- `self.plotValStore` - decides whether the current plot is to be displayed or not
+- `self.plotables` - list of strings corresponding to all the time-series that can be plotted
+- `self.options` - to display the various plots that can be plotted in the drop-down menu
+
+---
+
+### Class Methods
+- `updatePlots(self, plotables)` - takes an iterable (plotables) and reconfigures the various time-series  that can be plotted
+- `updateWidgets(self)` - updates the widgets on the *plotter-window*
+- `get_plotables(self)` - returns the plotables
+
+--- 
+
+## rsHRF_GUI.misc.gui_windows.plotterWindow.PlotterWindow
+
+### Class Variables 
+- `self.numberOfPlots` - the number of plots that can be displayed at a time (right now = 3)
+- `self.ts` - list of time-series that are to be plotted
+- `self.plot` - displaying the plots
+- `self.canvas` - FigureCanvasTkAgg instance
+
+---
+
+### Class Methods
+- `getNumberOfPlots(self)` - gives the number of plots
+- `makePlots(self, ts, val, num)` - displays the appropriate plots
+
+---
+
+## Fin.
