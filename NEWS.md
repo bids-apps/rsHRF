@@ -1,3 +1,7 @@
+# rsHRF 1.3.3
+## 28th October, 2020
+* `[Changed]` Removed GUI from docker-version.
+
 # rsHRF 1.3.1
 ## 23rd August, 2020
 *  `[Added]` Application of passband filter for BOLD deconvolution (using `--passband_deconvolve` argument).

@@ -2,7 +2,7 @@
 
 ### Installation and Setup
 ----
-This App can be used as a *standalone Python Package* OR as a *BIDS-App through Dockers*. 
+This App can be used as a *standalone Python Package* OR as a *BIDS-App through Docker*. 
 
 #### Standalone Python Package (Command Line Interface)
 To be used as a command line tool, ensure that you have ``Python>=3.6`` and use the command ``pip3 install rsHRF``. This command takes care of all the necessary dependencies so that the tool is usable straight out of the box. Once done, run ``rsHRF --help`` to see the required positional and optional arguments. The command line for the app installed in this way is ``rsHRF``.
@@ -13,7 +13,7 @@ To be used as a BIDS-App, ensure that you have docker installed. The image for t
 Running ``rsHRF`` after installing as a Python Package OR running ``docker run -ti --rm bids/rshrf`` after pulling the image through docker are equivalent. Thus, ``rsHRF --help`` is similar to ``docker run -ti --rm bids/rshrf --help``.
 
 #### Graphical User Interface
-To run the the application in a Graphical User Interface, run ``rsHRF --GUI`` or ``docker run -ti --rm bids/rshrf --GUI``. For more information regarding the GUI, click [here](https://github.com/BIDS-Apps/rsHRF/blob/master/rsHRF/rsHRF_GUI/documentation/rsHRF-GUI-User-Manual.pdf).
+To run the the application in a Graphical User Interface, run ``rsHRF --GUI``. For more information regarding the GUI, click [here](https://github.com/BIDS-Apps/rsHRF/blob/master/rsHRF/rsHRF_GUI/documentation/rsHRF-GUI-User-Manual.pdf).
 
 ### Usage
 ----

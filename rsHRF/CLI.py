@@ -5,7 +5,10 @@ from argparse      import ArgumentParser
 from bids.grabbids import BIDSLayout
 
 from rsHRF      import spm_dep, fourD_rsHRF
-from .rsHRF_GUI import run 
+
+#to decouple it from the docker version
+try: from .rsHRF_GUI import run 
+except: pass
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -142,7 +145,10 @@ def run_rsHRF():
 
     if (args.GUI):
         if (nargs == 2):
-            run.run()
+            try:
+                run.run()
+            except:
+                parser.error('--GUI should not be used inside a Docker container')
         else:
             parser.error('--no other arguments should be supplied with --GUI')
 
