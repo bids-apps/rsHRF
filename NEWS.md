@@ -1,4 +1,4 @@
-# rsHRF 1.3.5
+# rsHRF 1.3.6
 ## 28th October, 2020
 * `[Changed]` Removed GUI from docker-version.
 
