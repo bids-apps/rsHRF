@@ -310,29 +310,13 @@ class Core():
             # obtaining the deconvolved BOLD for each voxel
             for voxel_id in range(nvar):
                 hrf          = hrfa_TR[:, voxel_id]
-                h            = np.append(hrf, np.zeros((nobs - max(hrf.shape), 1)))
-                H            = np.fft.fft(h, axis=1)
-                Y            = np.fft.fft(bold_sig[:, voxel_id])
-                [c ,l]       = pyyawt.wavedec(abs(bold_sig[:, voxel_id]), 1, 'db2')
-                sigma        = pyyawt.wnoisest(c, l, 1)
-                Phh          = np.square(abs(H))
-                N            = bold_sig[:, voxel_id].size
-                sqrdtempnorm = (((np.linalg.norm(bold_sig[:, voxel_id]-np.mean(bold_sig[:, voxel_id]), 2)**2 - (N-1)*sigma**2))/(np.linalg.norm(h,1))**2)
-                Nf           = (sigma**2)*N
-                tempreg      = Nf/sqrdtempnorm
-                Pxx0         = np.square(np.divide(abs(np.multiply(Y, np.conj(H))), (Phh + N*tempreg)))
-                Pxx          = Pxx0
-                for i in range(0, 10):
-                    var1     = np.multiply(Phh, Pxx)
-                    var2     = np.multiply(Pxx, Y)
-                    var3     = np.add(var1, Nf)
-                    var4     = np.conjugate(H)
-                    var5     = np.multiply(var4, var2)
-                    M        = np.divide(var5, var3)
-                    PxxY     = np.divide(np.multiply(Pxx, Nf), var3)
-                    Pxx      = np.add(PxxY, np.square(abs(M)))
-                WienerFilterEst           = np.divide(np.multiply(np.conj(H), Pxx), np.add(np.multiply(np.square(abs(H)), Pxx), Nf))
-                data_deconv[:, voxel_id]  = np.fft.ifft(np.multiply(WienerFilterEst, Y))
+                H            = np.fft.fft(
+                               np.append(hrf,
+                                         np.zeros((nobs - max(hrf.shape), 1))), axis=0)
+                M            = np.fft.fft(bold_sig[:, voxel_id])
+                # data_deconv[:, voxel_id] = \
+                #     np.fft.ifft(H.conj() * M / (H * H.conj() + .1*np.mean((H * H.conj()))))
+                data_deconv[:, voxel_id]  = np.real(np.fft.ifft(M*np.conj(H)/(H*np.conj(H) + (1e-3)**2)))
                 event_number[:, voxel_id] = np.amax(event_bold[voxel_id].shape)
             # instantiating the time-series object
             dd = Bold_Deconv(label="Deconvolved-BOLD", ts=data_deconv,subject_index=subject_index, para=hrf.get_parameters())

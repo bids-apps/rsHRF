@@ -109,30 +109,13 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
         hrfa_TR = hrfa
     for voxel_id in range(nvar):
         hrf = hrfa_TR[:, voxel_id]
-        y = bold_sig_deconv[:, voxel_id]
-        N = y.size
-        h = np.append(hrf, np.zeros((nobs - max(hrf.shape), 1)))
-        H = np.fft.fft(h)
-        Y = np.fft.fft(abs(y))
-        [c ,l] = pyyawt.wavedec(abs(y), 1, 'db2')
-        sigma = pyyawt.wnoisest(c, l, 1)
-        Phh = np.square(abs(H))
-        sqrdtempnorm = ((((np.linalg.norm(y-np.mean(y), 2)**2) - (N-1)*(sigma**2)))/(np.linalg.norm(h,1))**2)
-        Nf = (sigma**2)*N
-        tempreg = Nf/sqrdtempnorm
-        Pxx0 = np.square(np.divide(abs(np.multiply(Y, np.conj(H))), (Phh + N*tempreg)))
-        Pxx = Pxx0
-        for i in range(0, 10):
-            var1 = np.multiply(Phh, Pxx)
-            var2 = np.multiply(Pxx, Y)
-            var3 = np.add(var1, Nf)
-            var4 = np.conjugate(H)
-            var5 = np.multiply(var4, var2)
-            M = np.divide(var5, var3)
-            PxxY = np.divide(np.multiply(Pxx, Nf), var3)
-            Pxx = np.add(PxxY, np.square(abs(M)))
-        WienerFilterEst = np.divide(np.multiply(np.conj(H), Pxx), np.add(np.multiply(np.square(abs(H)), Pxx), Nf))
-        data_deconv[:, voxel_id] = np.real(np.fft.ifft(np.multiply(WienerFilterEst, Y)))
+        H = np.fft.fft(
+            np.append(hrf,
+                      np.zeros((nobs - max(hrf.shape), 1))), axis=0)
+        M = np.fft.fft(bold_sig_deconv[:, voxel_id])
+        # data_deconv[:, voxel_id] = \
+        #     np.fft.ifft(H.conj() * M / (H * H.conj() + .1*np.mean((H * H.conj()))))
+        data_deconv[:, voxel_id] = np.real(np.fft.ifft(M*np.conj(H)/(H*np.conj(H) + (1e-3)**2)))
         event_number[:, voxel_id] = np.amax(event_bold[voxel_id].shape)
     # setting the output-path
     if mode == 'bids' or mode == 'bids w/ atlas':
