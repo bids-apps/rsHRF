@@ -6,15 +6,19 @@ from bids.grabbids import BIDSLayout
 
 from rsHRF      import spm_dep, fourD_rsHRF
 
-#to decouple it from the docker version
-try: from .rsHRF_GUI import run 
-except: pass
-
 import warnings
 warnings.filterwarnings("ignore")
 
 with open(op.join(op.dirname(op.realpath(__file__)), "VERSION"), "r") as fh:
     __version__ = fh.read().strip('\n')
+
+def runningInDocker():
+    with open('/proc/self/cgroup', 'r') as procfile:
+        for line in procfile:
+            fields = line.strip().split('/')
+            if 'docker' in fields:
+                return True
+    return False
 
 def get_parser():
     parser = ArgumentParser(description='retrieves the onsets of pseudo-events triggering a '
@@ -145,9 +149,10 @@ def run_rsHRF():
 
     if (args.GUI):
         if (nargs == 2):
-            try:
+            if not runningInDocker():
+                from .rsHRF_GUI import run 
                 run.run()
-            except:
+            else:
                 parser.error('--GUI should not be used inside a Docker container')
         else:
             parser.error('--no other arguments should be supplied with --GUI')
