@@ -11,3 +11,7 @@ _config.yml
 .circleci 
 MANIFEST.in
 .vscode
+**/.DS_Store
+**/*.pyc
+**/*.pyo
+*.egg-info/*
