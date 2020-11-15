@@ -10,7 +10,7 @@ class LoggingWindow():
         # get screen width and height
         screen_width  = window.winfo_screenwidth()
         screen_height = window.winfo_screenheight()
-        window.geometry("600x400+%d+%d" % (screen_width, 0))
+        window.geometry("600x400+%d+%d" % (screen_width-600, 0))
         self.lineNum  = 1
         self.text     = ScrolledText(window)
         self.text.pack(fill=BOTH, expand = 1)

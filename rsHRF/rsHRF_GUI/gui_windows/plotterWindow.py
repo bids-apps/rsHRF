@@ -13,7 +13,7 @@ class PlotterWindow():
         # get screen width and height
         screen_width       = window.winfo_screenwidth()
         screen_height      = window.winfo_screenheight()
-        window.geometry("600x400+%d+%d" % (screen_width, screen_height/2))
+        window.geometry("600x400+%d+%d" % (screen_width-600, screen_height/2))
         figure             = Figure(figsize=(5,5), dpi=100)
         self.numberOfPlots = 3
         self.ts            = [[] for i in range(0, self.numberOfPlots)]

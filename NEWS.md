@@ -1,4 +1,4 @@
-# rsHRF 1.3.8
+# rsHRF 1.3.9
 ## 15th November, 2020
 * `[Fixed]` Fixed bugs with GUI.
 
