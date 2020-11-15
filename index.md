@@ -41,8 +41,7 @@ In essence, the whole usage of the application can be broken down to 7 major ste
  ``--atlas`` optional argument followed by the name of the file.
 
  * The ``--brainmask`` argument which tells the application that the mask files
- are present within the BIDS formatted data-set directory itself (which was supplied
- supplied with ``--bids_dir``).
+ are present within the BIDS formatted data-set directory itself (which was supplied with ``--bids_dir``).
 
  * Out of the above 2 options, both cannot be supplied at once. In the case where neither of the 2 options are supplied, the app proceeds to generate a mask by computing the variance, however, providing a mask-file is strongly recommended.
 
@@ -187,7 +186,7 @@ bids/rshrf --bids_dir input_dir --output_dir results --analysis_level participan
 
 In the above example, the ``output_dir`` is ``results`` directory. The 
 corresponding mask file supplied is ``mask.nii``. The BIDS formatted data-set
-lies in the ``input_dir`` directory. The analysis level is ``participant``. The analysis will be performed for all subjects since no specific subjects are mentioned using ``--analysis_level participant``.
+lies in the ``input_dir`` directory. The analysis level is ``participant``. The analysis will be performed for all subjects since no specific subjects are mentioned using ``--participant_label``.
 
 #### Running the analysis with a BIDS formatted data-set that also includes a unique mask file for each of the input file present. 
 
@@ -210,7 +209,7 @@ b) Through the BIDS-App
 docker run -ti --rm \
 -v /path/to/bids_dir:/input_dir:ro \
 -v /path/to/output/directory/results:/results \
-bids/rshrf input_dir results participant --brainmask --estimation canon2dd --participant_label 001 002
+bids/rshrf --bids_dir input_dir --output_dir results --analysis_level participant --brainmask --estimation canon2dd --participant_label 001 002
 ```
 
 In the above example, the output directory is ``results`` directory. The BIDS formatted data-set
