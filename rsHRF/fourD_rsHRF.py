@@ -7,14 +7,13 @@ import scipy.io          as sio
 import matplotlib.pyplot as plt
 from scipy        import stats, signal
 from scipy.sparse import lil_matrix
-from rsHRF import spm_dep, processing, canon, sFIR, parameters, basis_functions, utils
+from rsHRF        import spm_dep, processing, parameters, basis_functions, utils, iterative_wiener_deconv
 
 import warnings
 warnings.filterwarnings("ignore")
 
-def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii", mode="bids"):
+def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii", mode="bids", wiener=False, temporal_mask=[]):
     # book-keeping w.r.t parameter values
-    temporal_mask = []
     if 'localK' not in para or para['localK'] == None:
         if para['TR']<=2:
             para['localK'] = 1
@@ -66,7 +65,6 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
         nobs       = data.shape[-1]
         data1      = np.reshape(data, (-1, nobs), order='F').T
         bold_sig = stats.zscore(data1[:, voxel_ind], ddof=1)
-
    # for time-series input
     else:
         name = input_file.split('/')[-1].split('.')[0]
@@ -75,6 +73,8 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
             data1 = np.expand_dims(data1, axis=1)
         nobs = data1.shape[0]
         bold_sig = stats.zscore(data1, ddof=1)
+    if len(temporal_mask) > 0 and len(temporal_mask) != nobs:
+            raise ValueError ('Inconsistency in temporal_mask dimensions.\n' + 'Size of mask: ' + str(len(temporal_mask)) + '\n' + 'Size of time-series: ' + str(nobs))
     bold_sig = np.nan_to_num(bold_sig)
     bold_sig_deconv = processing. \
                       rest_filter. \
@@ -108,12 +108,15 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
         hrfa_TR = hrfa
     for voxel_id in range(nvar):
         hrf = hrfa_TR[:, voxel_id]
-        H = np.fft.fft(
-            np.append(hrf,
-                      np.zeros((nobs - max(hrf.shape), 1))), axis=0)
-        M = np.fft.fft(bold_sig_deconv[:, voxel_id])
-        data_deconv[:, voxel_id] = \
-            np.fft.ifft(H.conj() * M / (H * H.conj() + .1*np.mean((H * H.conj()))))
+        if not wiener:
+            H = np.fft.fft(
+                np.append(hrf,
+                          np.zeros((nobs - max(hrf.shape), 1))), axis=0)
+            M = np.fft.fft(bold_sig_deconv[:, voxel_id])
+            data_deconv[:, voxel_id] = \
+                np.fft.ifft(H.conj() * M / (H * H.conj() + .1*np.mean((H * H.conj()))))
+        else:
+            data_deconv[:, voxel_id] = iterative_wiener_deconv.rsHRF_iterative_wiener_deconv(bold_sig_deconv[:, voxel_id], hrf)
         event_number[:, voxel_id] = np.amax(event_bold[voxel_id].shape)
     # setting the output-path
     if mode == 'bids' or mode == 'bids w/ atlas':
@@ -171,7 +174,11 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
             break 
         pos += 1
     event_plot = lil_matrix((1, nobs))
-    event_plot[:, event_bold[pos]] = 1
+    if event_bold.size:
+        event_plot[:, event_bold[pos]] = 1
+    else:
+        print("No Events Detected!")
+        return 0
     event_plot = np.ravel(event_plot.toarray())
     plt.figure()
     plt.plot(para['TR'] * np.arange(1, np.amax(hrfa[:, pos].shape) + 1),
@@ -194,3 +201,4 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
     plt.xlabel('time (s)')
     plt.savefig(os.path.join(sub_save_dir, name + '_plot_2.png'))
     print('Done')
+    return 0

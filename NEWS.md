@@ -1,3 +1,8 @@
+# rsHRF 1.4.0
+## 20th December, 2020
+*  `[Added]` Temporal filter.
+*  `[Added]` Wiener deconvolution.
+* `[Fixed]` Fixed bugs in logging-window (GUI).
 # rsHRF 1.3.9
 ## 15th November, 2020
 * `[Fixed]` Fixed bugs with GUI.

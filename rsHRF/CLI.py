@@ -100,6 +100,9 @@ def get_parser():
     group_para.add_argument('--thr', action='store', type=float, default=1,
                             help='set thr parameter')
 
+    group_para.add_argument('--temporal_mask', action='store', type=op.abspath,
+                        help='the path for the (temporal) mask file.\n The mask file should be a ".dat" file, consisting of a binary string of the same length as the signal')
+
     group_para.add_argument('--order', action='store', type=int, default=3,
                             help='set the number of basis vectors')
 
@@ -115,23 +118,22 @@ def get_parser():
     group_para.add_argument('--localK', action='store', type=int,
                             help='set localK')
 
+    group_para.add_argument('--wiener', action='store_true',
+                            help='to perform iterative wiener deconvolution')
+
     return parser
 
 
 def run_rsHRF():
-    parser = get_parser()
-
-    args = parser.parse_args()
-
+    parser     = get_parser()
+    args       = parser.parse_args()
     arg_groups = {}
-
     for group in parser._action_groups:
-        group_dict = {a.dest: getattr(args, a.dest, None) for a in group._group_actions }
+        group_dict              = {a.dest: getattr(args, a.dest, None) for a in group._group_actions }
         arg_groups[group.title] = group_dict
-
-    para = arg_groups['Parameters']
-
-    nargs = len(sys.argv)
+    para          = arg_groups['Parameters']
+    nargs         = len(sys.argv)
+    temporal_mask = []
 
     if (not args.GUI) and (args.output_dir is None):
         parser.error('--output_dir is required when executing in command-line interface')
@@ -176,6 +178,16 @@ def run_rsHRF():
     if args.ts is not None and (not args.ts.endswith(('.txt'))):
         parser.error('--ts file should end with .txt')
 
+    if args.temporal_mask is not None and (not args.temporal_mask.endswith(('.dat'))):
+        parser.error('--temporal_mask ile should end with ".dat"')
+    
+    if args.temporal_mask is not None:
+        f = open(args.temporal_mask,'r')
+        for line in f:
+            for each in line:
+                if each in ['0','1']:
+                    temporal_mask.append(int(each))
+
     if args.ts is not None:
         file_type = op.splitext(args.ts)
         if para['TR'] <= 0:
@@ -186,7 +198,7 @@ def run_rsHRF():
         para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
                                 np.fix(para['max_onset_search'] / para['dt']) + 1,
                                 dtype='int')
-        fourD_rsHRF.demo_rsHRF(args.ts, None, args.output_dir, para, args.n_jobs, file_type, mode='time-series')
+        fourD_rsHRF.demo_rsHRF(args.ts, None, args.output_dir, para, args.n_jobs, file_type, mode='time-series', temporal_mask=temporal_mask, wiener=args.wiener)
 
     if args.input_file is not None:
         if args.atlas is not None:
@@ -219,7 +231,7 @@ def run_rsHRF():
         para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
                                 np.fix(para['max_onset_search'] / para['dt']) + 1,
                                 dtype='int')
-        fourD_rsHRF.demo_rsHRF(args.input_file, args.atlas, args.output_dir, para, args.n_jobs, file_type, mode='input')
+        fourD_rsHRF.demo_rsHRF(args.input_file, args.atlas, args.output_dir, para, args.n_jobs, file_type, mode='input', temporal_mask=temporal_mask, wiener=args.wiener)
 
     
     if args.bids_dir is not None and args.atlas is not None:
@@ -259,7 +271,7 @@ def run_rsHRF():
                                         dtype='int')
                 num_errors += 1
                 try:
-                    fourD_rsHRF.demo_rsHRF(all_inputs[file_count], args.atlas, args.output_dir, para, args.n_jobs, file_type, mode='bids w/ atlas')
+                    fourD_rsHRF.demo_rsHRF(all_inputs[file_count], args.atlas, args.output_dir, para, args.n_jobs, file_type, mode='bids w/ atlas', temporal_mask=temporal_mask, wiener=args.wiener)
                     num_errors -=1
                 except ValueError as err:
                     print(err.args[0])
@@ -341,7 +353,7 @@ def run_rsHRF():
                                         dtype='int')
                 num_errors += 1
                 try:
-                    fourD_rsHRF.demo_rsHRF(all_inputs[file_count], all_masks[file_count], args.output_dir, para, args.n_jobs, mode='bids')
+                    fourD_rsHRF.demo_rsHRF(all_inputs[file_count], all_masks[file_count], args.output_dir, para, args.n_jobs, mode='bids', temporal_mask=temporal_mask, wiener=args.wiener)
                     num_errors -=1
                 except ValueError as err:
                     print(err.args[0])
