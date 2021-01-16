@@ -3,7 +3,7 @@ import time
 import numpy   as np
 import nibabel as nib
 from scipy import stats
-from rsHRF import spm_dep, processing, utils
+from rsHRF import spm_dep, processing, utils, basis_functions
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -30,6 +30,10 @@ para['dt']               = para['TR']/para['T']
 para['lag']              = np.arange(np.fix(para['min_onset_search'] / para['dt']),
                         np.fix(para['max_onset_search'] / para['dt']) + 1,
                         dtype='int')
+if para['TR']<=2:
+    para['localK'] = 1
+else:
+    para['localK'] = 2
 if para['T']  == 1:
     para['T0'] = 1
 
@@ -46,13 +50,11 @@ for i in range(0, 7):
         para['thr']   = int(parameterFile[10])
     else:
         para['thr']   = [int(parameterFile[10])]
-
-    path       = '/home/redhood/Desktop/Work/GSoC/rsHRF-Toolbox/rsHRF/Test/NITRC-multi-file-downloads/sub-10171/func/' # path to input directory
+    path       = '<Path_To_Directory:/NITRC-multi-file-downloads/sub-10171/func/>' # path to input directory
     input_file = path + 'sub-10171_task-rest_bold_space-MNI152NLin2009cAsym_preproc.nii'
     mask_file  = path + 'sub-10171_task-rest_bold_space-MNI152NLin2009cAsym_brainmask.nii'
     file_type  = ".nii"
     mode       = "file"
-
     name       = input_file.split('/')[-1].split('.')[0]
     v          = spm_dep.spm.spm_vol(mask_file)
     v1         = spm_dep.spm.spm_vol(input_file)
@@ -69,15 +71,16 @@ for i in range(0, 7):
         rest_IdealFilter(bold_sig, para['TR'], para['passband'])
     bold_sig   = bold_sig[:,voxel_id]
     bold_sig   = np.expand_dims(bold_sig, axis=1)
-
     start_time = time.time()
-    beta_hrf, event_bold, bf = utils.hrf_estimation.compute_hrf(bold_sig, para, [], 1)
-    if 'FIR' not in para["estimation"]:
+    if not (para['estimation'] == 'sFIR' or para['estimation'] == 'FIR'):
+        bf = basis_functions.basis_functions.get_basis_function(bold_sig.shape, para)
+        beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(bold_sig, para, [], 1, bf=bf)
         hrfa = np.dot(bf, beta_hrf[np.arange(0, bf.shape[1]), :])
+    #Estimate HRF for FIR and sFIR
     else:
-        hrfa = beta_hrf
+        beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(bold_sig, para, [], 1)
+        hrfa = beta_hrf[:-1,:]
     print("--- %s seconds ---" % (time.time() - start_time))
     print("Done")
-    
     np.savetxt("./Data/hrf_" + Name[i] +"_python.txt", hrfa,delimiter=", ")
     i += 1
