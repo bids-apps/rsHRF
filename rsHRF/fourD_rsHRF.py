@@ -92,6 +92,7 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
         hrfa = np.dot(bf, beta_hrf[np.arange(0, bf.shape[1]), :])
     #Estimate HRF for FIR and sFIR
     else:
+        para['T'] = 1        
         beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(bold_sig, para, temporal_mask, p_jobs)
         hrfa = beta_hrf[:-1,:]
     nvar = hrfa.shape[1]
