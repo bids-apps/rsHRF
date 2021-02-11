@@ -1,4 +1,4 @@
-# rsHRF 1.4.2
+# rsHRF 1.4.3
 ## 10th february, 2021
 *  `[Fixed]` Fixed bugs in HRF plots.
 
