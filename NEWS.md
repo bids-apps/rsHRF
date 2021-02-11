@@ -1,3 +1,7 @@
+# rsHRF 1.4.2
+## 10th february, 2021
+*  `[Fixed]` Fixed bugs in HRF plots.
+
 # rsHRF 1.4.1
 ## 4th January, 2021
 *  `[Fixed]` Fixed dependency bugs.

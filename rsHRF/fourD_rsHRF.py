@@ -55,10 +55,10 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
             print('No atlas provided! Generating mask file...')
             if file_type == ".nii" or file_type == ".nii.gz" :
                 data   = v1.get_data() 
-                brain = np.nanvar(data.reshape(-1, data.shape[3]), -1, ddof=0)
+                brain  = np.nanvar(data.reshape(-1, data.shape[3]), -1, ddof=0)
             else:
                 data   = v1.agg_data()
-                brain = np.nanvar(data, -1, ddof=0) 
+                brain  = np.nanvar(data, -1, ddof=0) 
             print('Done')
         voxel_ind  = np.where(brain > 0)[0]
         mask_shape = data.shape[:-1]
@@ -170,8 +170,8 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
             dat3 = dat3.flatten(order='F')
         spm_dep.spm.spm_write_vol(v1, mask_data, fname, file_type)
     pos = 0
-    while pos < hrfa.shape[1]:
-        if np.any(hrfa[:,pos]):
+    while pos < hrfa_TR.shape[1]:
+        if np.any(hrfa_TR[:,pos]):
             break 
         pos += 1
     event_plot = lil_matrix((1, nobs))
@@ -182,8 +182,8 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
         return 0
     event_plot = np.ravel(event_plot.toarray())
     plt.figure()
-    plt.plot(para['TR'] * np.arange(1, np.amax(hrfa[:, pos].shape) + 1),
-             hrfa[:, pos], linewidth=1)
+    plt.plot(para['TR'] * np.arange(1, np.amax(hrfa_TR[:, pos].shape) + 1),
+             hrfa_TR[:, pos], linewidth=1)
     plt.xlabel('time (s)')
     plt.savefig(os.path.join(sub_save_dir, name + '_plot_1.png'))
     plt.figure()
