@@ -88,7 +88,7 @@ def get_parser():
     group_para.add_argument('-T', action='store', type=int, default=3,
                             help='set T parameter')
 
-    group_para.add_argument('-T0', action='store', type=float, default=3,
+    group_para.add_argument('-T0', action='store', type=float, default=1,
                             help='set T0 parameter')
 
     group_para.add_argument('-TD_DD', action='store', type=int, default=2,
