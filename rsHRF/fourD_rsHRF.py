@@ -28,7 +28,7 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
             name = input_file.filename.split('/')[-1].split('.')[0]
             v1 = spm_dep.spm.spm_vol(input_file.filename)
         else:
-            name = input_file.split('/')[-1].split('.')[0]   
+            name = input_file.split('/')[-1].split('.')[0]
             v1 = spm_dep.spm.spm_vol(input_file)
         if mask_file != None:
             if mode == 'bids':
@@ -48,17 +48,17 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
                 raise ValueError ('Inconsistency in input-mask dimensions' + '\n\tinput_file == ' + name + file_type + '\n\tmask_file == ' + mask_name + file_type)
             else:
                 if file_type == ".nii" or file_type == ".nii.gz" :
-                    data   = v1.get_data()      
+                    data   = v1.get_data()
                 else:
                     data   = v1.agg_data()
         else:
             print('No atlas provided! Generating mask file...')
             if file_type == ".nii" or file_type == ".nii.gz" :
-                data   = v1.get_data() 
+                data   = v1.get_data()
                 brain  = np.nanvar(data.reshape(-1, data.shape[3]), -1, ddof=0)
             else:
                 data   = v1.agg_data()
-                brain  = np.nanvar(data, -1, ddof=0) 
+                brain  = np.nanvar(data, -1, ddof=0)
             print('Done')
         voxel_ind  = np.where(brain > 0)[0]
         mask_shape = data.shape[:-1]
@@ -78,10 +78,10 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
     bold_sig = np.nan_to_num(bold_sig)
     bold_sig_deconv = processing. \
                       rest_filter. \
-                      rest_IdealFilter(bold_sig, para['TR'], para['passband_deconvolve'])   
+                      rest_IdealFilter(bold_sig, para['TR'], para['passband_deconvolve'])
     bold_sig = processing. \
                rest_filter. \
-               rest_IdealFilter(bold_sig, para['TR'], para['passband'])   
+               rest_IdealFilter(bold_sig, para['TR'], para['passband'])
     data_deconv  = np.zeros(bold_sig.shape)
     event_number = np.zeros((1, bold_sig.shape[1]))
     print('Retrieving HRF ...')
@@ -92,7 +92,6 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
         hrfa = np.dot(bf, beta_hrf[np.arange(0, bf.shape[1]), :])
     #Estimate HRF for FIR and sFIR
     else:
-        para['T'] = 1        
         beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(bold_sig, para, temporal_mask, p_jobs)
         hrfa = beta_hrf[:-1,:]
     nvar = hrfa.shape[1]
@@ -172,7 +171,7 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
     pos = 0
     while pos < hrfa_TR.shape[1]:
         if np.any(hrfa_TR[:,pos]):
-            break 
+            break
         pos += 1
     event_plot = lil_matrix((1, nobs))
     if event_bold.size:
