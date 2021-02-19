@@ -88,7 +88,7 @@ def get_parser():
     group_para.add_argument('-T', action='store', type=int, default=3,
                             help='set T parameter')
 
-    group_para.add_argument('-T0', action='store', type=float, default=1,
+    group_para.add_argument('-T0', action='store', type=int, default=1,
                             help='set T0 parameter')
 
     group_para.add_argument('-TD_DD', action='store', type=int, default=2,
@@ -144,7 +144,7 @@ def run_rsHRF():
     if (args.GUI):
         if (nargs == 2):
             try:
-                from .rsHRF_GUI import run 
+                from .rsHRF_GUI import run
                 run.run()
             except ModuleNotFoundError:
                 parser.error('--GUI should not be used inside a Docker container')
@@ -180,13 +180,16 @@ def run_rsHRF():
 
     if args.temporal_mask is not None and (not args.temporal_mask.endswith(('.dat'))):
         parser.error('--temporal_mask ile should end with ".dat"')
-    
+
     if args.temporal_mask is not None:
         f = open(args.temporal_mask,'r')
         for line in f:
             for each in line:
                 if each in ['0','1']:
                     temporal_mask.append(int(each))
+
+    if args.estimation == 'sFIR' or args.estimation == 'FIR':
+        para['T'] = 1
 
     if args.ts is not None:
         file_type = op.splitext(args.ts)
@@ -204,7 +207,7 @@ def run_rsHRF():
         if args.atlas is not None:
             if (args.input_file.endswith(('.nii', '.nii.gz')) and args.atlas.endswith(('.gii', '.gii.gz'))) or (args.input_file.endswith(('.gii', '.gii.gz')) and args.atlas.endswith(('.nii', '.nii.gz'))):
                 parser.error('--atlas and input_file should be of the same type [NIfTI or GIfTI]')
-        
+
         # carry analysis with input_file and atlas
         file_type = op.splitext(args.input_file)
         if file_type[-1] == ".gz":
@@ -233,7 +236,7 @@ def run_rsHRF():
                                 dtype='int')
         fourD_rsHRF.demo_rsHRF(args.input_file, args.atlas, args.output_dir, para, args.n_jobs, file_type, mode='input', temporal_mask=temporal_mask, wiener=args.wiener)
 
-    
+
     if args.bids_dir is not None and args.atlas is not None:
         # carry analysis with bids_dir and 1 atlas
         layout = BIDSLayout(args.bids_dir)
@@ -363,7 +366,7 @@ def run_rsHRF():
             if success == 0:
                 raise RuntimeError('Dimensions were inconsistent for all input-mask pairs; \n'
                                    'No inputs were processed!')
-                
+
 
 
 def main():
