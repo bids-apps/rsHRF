@@ -1,3 +1,10 @@
+# rsHRF 1.4.4
+## 19th february, 2021
+*  `[Changed]` Default `para['T0']` value to 1 instead of 3.
+*  `[Changed]` Changed float to int value (for `--T0` argument).
+*  `[Fixed]` Fixed bugs for default sFIR `para['T']` value.
+
+
 # rsHRF 1.4.3
 ## 10th february, 2021
 *  `[Fixed]` Fixed bugs in HRF plots.
@@ -34,7 +41,7 @@
 * `[Added]` Implicit generation of brain-mask.
 * `[Fixed]` Minor bugs, raising appropriate errors, etc.
 
-# rsHRF 1.1.1 
+# rsHRF 1.1.1
 ## 24th July, 2020
 
 * `[Added]` Fourier, Gamma and Hanning basis functions.
