@@ -1,5 +1,4 @@
 import os
-import pyyawt
 import numpy    as np
 import nibabel  as nib
 import scipy.io as sio
@@ -309,15 +308,11 @@ class Core():
                 hrfa_TR = hrfa
             # obtaining the deconvolved BOLD for each voxel
             for voxel_id in range(nvar):
-                hrf          = hrfa_TR[:, voxel_id]
-                H            = np.fft.fft(
-                               np.append(hrf,
-                                         np.zeros((nobs - max(hrf.shape), 1))), axis=0)
-                M            = np.fft.fft(bold_sig[:, voxel_id])
-                # data_deconv[:, voxel_id] = \
-                #     np.fft.ifft(H.conj() * M / (H * H.conj() + .1*np.mean((H * H.conj()))))
-                data_deconv[:, voxel_id]  = np.real(np.fft.ifft(M*np.conj(H)/(H*np.conj(H) + (1e-3)**2)))
-                event_number[:, voxel_id] = np.amax(event_bold[voxel_id].shape)
+                hrf_                       = hrfa_TR[:, voxel_id]
+                H                          = np.fft.fft(np.append(hrf_, np.zeros((nobs - max(hrf_.shape), 1))), axis=0)
+                M                          = np.fft.fft(bold_sig[:, voxel_id])
+                data_deconv[:, voxel_id]   = np.fft.ifft(H.conj() * M / (H * H.conj() + .1*np.mean((H * H.conj()))))
+                event_number[:, voxel_id]  = np.amax(event_bold[voxel_id].shape)
             # instantiating the time-series object
             dd = Bold_Deconv(label="Deconvolved-BOLD", ts=data_deconv,subject_index=subject_index, para=hrf.get_parameters())
             dd.set_HRF(hrf) # the deconvoled BOLD Time-series is associated to a particular HRF

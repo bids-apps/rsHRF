@@ -1,5 +1,4 @@
 import os
-import pyyawt
 import matplotlib
 matplotlib.use('agg')
 import numpy             as np
@@ -8,14 +7,13 @@ import scipy.io          as sio
 import matplotlib.pyplot as plt
 from scipy        import stats, signal
 from scipy.sparse import lil_matrix
-from rsHRF import spm_dep, processing, canon, sFIR, parameters, basis_functions, utils
+from rsHRF        import spm_dep, processing, parameters, basis_functions, utils, iterative_wiener_deconv
 
 import warnings
 warnings.filterwarnings("ignore")
 
-def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii", mode="bids"):
+def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii", mode="bids", wiener=False, temporal_mask=[]):
     # book-keeping w.r.t parameter values
-    temporal_mask = []
     if 'localK' not in para or para['localK'] == None:
         if para['TR']<=2:
             para['localK'] = 1
@@ -57,17 +55,16 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
             print('No atlas provided! Generating mask file...')
             if file_type == ".nii" or file_type == ".nii.gz" :
                 data   = v1.get_data() 
-                brain = np.nanvar(data.reshape(-1, data.shape[3]), -1, ddof=0)
+                brain  = np.nanvar(data.reshape(-1, data.shape[3]), -1, ddof=0)
             else:
                 data   = v1.agg_data()
-                brain = np.nanvar(data, -1, ddof=0) 
+                brain  = np.nanvar(data, -1, ddof=0) 
             print('Done')
         voxel_ind  = np.where(brain > 0)[0]
         mask_shape = data.shape[:-1]
         nobs       = data.shape[-1]
         data1      = np.reshape(data, (-1, nobs), order='F').T
         bold_sig = stats.zscore(data1[:, voxel_ind], ddof=1)
-
    # for time-series input
     else:
         name = input_file.split('/')[-1].split('.')[0]
@@ -76,6 +73,8 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
             data1 = np.expand_dims(data1, axis=1)
         nobs = data1.shape[0]
         bold_sig = stats.zscore(data1, ddof=1)
+    if len(temporal_mask) > 0 and len(temporal_mask) != nobs:
+            raise ValueError ('Inconsistency in temporal_mask dimensions.\n' + 'Size of mask: ' + str(len(temporal_mask)) + '\n' + 'Size of time-series: ' + str(nobs))
     bold_sig = np.nan_to_num(bold_sig)
     bold_sig_deconv = processing. \
                       rest_filter. \
@@ -93,6 +92,7 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
         hrfa = np.dot(bf, beta_hrf[np.arange(0, bf.shape[1]), :])
     #Estimate HRF for FIR and sFIR
     else:
+        para['T'] = 1        
         beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(bold_sig, para, temporal_mask, p_jobs)
         hrfa = beta_hrf[:-1,:]
     nvar = hrfa.shape[1]
@@ -109,13 +109,15 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
         hrfa_TR = hrfa
     for voxel_id in range(nvar):
         hrf = hrfa_TR[:, voxel_id]
-        H = np.fft.fft(
-            np.append(hrf,
-                      np.zeros((nobs - max(hrf.shape), 1))), axis=0)
-        M = np.fft.fft(bold_sig_deconv[:, voxel_id])
-        # data_deconv[:, voxel_id] = \
-        #     np.fft.ifft(H.conj() * M / (H * H.conj() + .1*np.mean((H * H.conj()))))
-        data_deconv[:, voxel_id] = np.real(np.fft.ifft(M*np.conj(H)/(H*np.conj(H) + (1e-3)**2)))
+        if not wiener:
+            H = np.fft.fft(
+                np.append(hrf,
+                          np.zeros((nobs - max(hrf.shape), 1))), axis=0)
+            M = np.fft.fft(bold_sig_deconv[:, voxel_id])
+            data_deconv[:, voxel_id] = \
+                np.fft.ifft(H.conj() * M / (H * H.conj() + .1*np.mean((H * H.conj()))))
+        else:
+            data_deconv[:, voxel_id] = iterative_wiener_deconv.rsHRF_iterative_wiener_deconv(bold_sig_deconv[:, voxel_id], hrf)
         event_number[:, voxel_id] = np.amax(event_bold[voxel_id].shape)
     # setting the output-path
     if mode == 'bids' or mode == 'bids w/ atlas':
@@ -140,8 +142,9 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
         dic["event_number"] = event_number
         dic["data_deconv"]  = data_deconv
         ext = '_hrf_deconv.mat'
+    name = name.rsplit('_bold', 1)[0]   
     sio.savemat(os.path.join(sub_save_dir, name + ext), dic)
-    HRF_para_str = ['Height', 'Time2peak', 'FWHM']
+    HRF_para_str = ['height', 'T2P', 'FWHM']
     if mode != "time-series":
         mask_data = np.zeros(mask_shape).flatten(order='F')
         for i in range(3):
@@ -151,7 +154,7 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
             mask_data = mask_data.reshape(mask_shape, order='F')
             spm_dep.spm.spm_write_vol(v1, mask_data, fname, file_type)
             mask_data = mask_data.flatten(order='F')
-        fname = os.path.join(sub_save_dir, name + '_event_number.nii')
+        fname = os.path.join(sub_save_dir, name + '_eventnumber')
         mask_data[voxel_ind] = event_number
         mask_data = mask_data.reshape(mask_shape, order='F')
         spm_dep.spm.spm_write_vol(v1, mask_data, fname, file_type)
@@ -168,18 +171,22 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
             dat3 = dat3.flatten(order='F')
         spm_dep.spm.spm_write_vol(v1, mask_data, fname, file_type)
     pos = 0
-    while pos < hrfa.shape[1]:
-        if np.any(hrfa[:,pos]):
+    while pos < hrfa_TR.shape[1]:
+        if np.any(hrfa_TR[:,pos]):
             break 
         pos += 1
     event_plot = lil_matrix((1, nobs))
-    event_plot[:, event_bold[pos]] = 1
+    if event_bold.size:
+        event_plot[:, event_bold[pos]] = 1
+    else:
+        print("No Events Detected!")
+        return 0
     event_plot = np.ravel(event_plot.toarray())
     plt.figure()
-    plt.plot(para['TR'] * np.arange(1, np.amax(hrfa[:, pos].shape) + 1),
-             hrfa[:, pos], linewidth=1)
+    plt.plot(para['TR'] * np.arange(1, np.amax(hrfa_TR[:, pos].shape) + 1),
+             hrfa_TR[:, pos], linewidth=1)
     plt.xlabel('time (s)')
-    plt.savefig(os.path.join(sub_save_dir, name + '_plot_1.png'))
+    plt.savefig(os.path.join(sub_save_dir, name + '_hrf_plot.png'))
     plt.figure()
     plt.plot(para['TR'] * np.arange(1, nobs + 1),
              np.nan_to_num(stats.zscore(bold_sig[:, pos], ddof=1)),
@@ -192,7 +199,8 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
     plt.setp(baseline, 'color', 'k', 'markersize', 1)
     plt.setp(stemlines, 'color', 'k')
     plt.setp(markerline, 'color', 'k', 'markersize', 3, 'marker', 'd')
-    plt.legend(['BOLD', 'deconvolved', 'events'])
+    plt.legend(['BOLD', 'Deconvolved BOLD', 'Events'], loc='best')
     plt.xlabel('time (s)')
-    plt.savefig(os.path.join(sub_save_dir, name + '_plot_2.png'))
+    plt.savefig(os.path.join(sub_save_dir, name + '_deconvolution_plot.png'))   
     print('Done')
+    return 0

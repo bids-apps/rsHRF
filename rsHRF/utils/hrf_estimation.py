@@ -40,7 +40,6 @@ def estimate_hrf(bold_sig, i, para, N, bf = None):
     localK = para['localK']
     if para['estimation'] == 'sFIR' or para['estimation'] == 'FIR':
         #Estimate HRF for the sFIR or FIR basis functions
-        para['T'] = 1
         if np.count_nonzero(para['thr']) == 1:
             para['thr'] = np.array([para['thr'], np.inf])
         thr = para['thr'] #Thr is a vector for (s)FIR
@@ -54,7 +53,6 @@ def estimate_hrf(bold_sig, i, para, N, bf = None):
         u = np.reshape(u, (1, - 1), order='F')
         beta_hrf = wgr_hrf_fit(dat, para, u, bf)
         u = u0.toarray()[0].nonzero()[0]
-        bf_global = bf
     return beta_hrf, u
 
 def wgr_onset_design(u, bf, T, T0, nscans):
@@ -116,23 +114,27 @@ def wgr_BOLD_event_vector(N, matrix, thr, k, temporal_mask):
     """
     data = lil_matrix((1, N))
     matrix = matrix[:, np.newaxis]
+    matrix = np.nan_to_num(matrix)
     if 0 in np.array(temporal_mask).shape:
         matrix = stats.zscore(matrix, ddof=1)
-        matrix = np.nan_to_num(matrix)
         for t in range(1 + k, N - k + 1):
             if matrix[t - 1, 0] > thr[0] and \
                     np.all(matrix[t - k - 1:t - 1, 0] < matrix[t - 1, 0]) and \
                     np.all(matrix[t - 1, 0] > matrix[t:t + k, 0]):
                 data[0, t - 1] = 1
     else:
+        tmp = temporal_mask
+        for i in range(len(temporal_mask)):
+            if tmp[i] == 1:
+                temporal_mask[i] = i
         datm = np.mean(matrix[temporal_mask])
         datstd = np.std(matrix[temporal_mask])
-        datstd[datstd == 0] = 1
-        matrix = np.divide((matrix - datm), datstd)
+        if datstd == 0: datstd = 1
+        matrix = (matrix - datm)/datstd
         for t in range(1 + k, N - k + 1):
-            if temporal_mask[t-1]:
+            if tmp[t-1]:
                 if matrix[t - 1, 0] > thr[0] and \
                         np.all(matrix[t - k - 1:t - 1, 0] < matrix[t - 1, 0]) and \
                         np.all(matrix[t - 1, 0] > matrix[t:t + k, 0]):
-                    data[0, t - 1] = 1
+                    data[0, t - 1] = 1.
     return data

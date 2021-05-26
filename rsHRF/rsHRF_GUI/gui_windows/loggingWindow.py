@@ -5,14 +5,14 @@ from tkinter.scrolledtext import ScrolledText
 
 class LoggingWindow():
     def __init__(self):
-        window = Toplevel()
+        window = Toplevel(bg='white')
         window.title("Logger")
         # get screen width and height
         screen_width  = window.winfo_screenwidth()
         screen_height = window.winfo_screenheight()
-        window.geometry("600x400+%d+%d" % (screen_width, 0))
+        window.geometry("600x400+%d+%d" % (screen_width-600, 0))
         self.lineNum  = 1
-        self.text     = ScrolledText(window)
+        self.text     = ScrolledText(window, background='black')
         self.text.pack(fill=BOTH, expand = 1)
 
     def putLog(self, plotables=None, data_info=None, status=None):

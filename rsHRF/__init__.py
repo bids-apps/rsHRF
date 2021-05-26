@@ -6,4 +6,5 @@ import rsHRF.parameters
 import rsHRF.fourD_rsHRF
 import rsHRF.CLI
 __all__ = ["spm_dep", "processing", "canon", "utils",
-           "sFIR", "parameters", "basis_functions", "fourD_rsHRF.py", "CLI.py"]
+           "sFIR", "parameters",   "basis_functions",
+           "fourD_rsHRF.py", "CLI.py", "iterative_wiener_deconv"]
