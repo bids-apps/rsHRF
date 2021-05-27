@@ -146,6 +146,7 @@ def spm_write_vol(image_volume_info, image_voxels, image_name, file_type):
         image_volume_info = nib.Nifti1Image(data, affine)
         nib.save(image_volume_info, image_name + file_type)
     else:
+        file_type = '.gii'
         data = image_voxels
         gi = nib.GiftiImage()
         gi.add_gifti_data_array(nib.gifti.GiftiDataArray(image_voxels))

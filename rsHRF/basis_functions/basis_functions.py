@@ -26,19 +26,19 @@ def get_basis_function(bold_sig_shape, para):
     bf = spm_dep.spm.spm_orth(np.asarray(bf))
     return bf
 
-def canon2dd_bf(data_shape, xBF):
+def canon2dd_bf(data_shape, para):
     """
     Returns canon basis functions
     """
     N, nvar = data_shape
-    bf = canon.canon_hrf2dd.wgr_spm_get_canonhrf(xBF)
-    if 'Volterra' in xBF:
-        if xBF['Volterra'] == 2:
+    bf = canon.canon_hrf2dd.wgr_spm_get_canonhrf(para)
+    if 'Volterra' in para:
+        if para['Volterra'] == 2:
             bf2 = np.einsum('i...,j...->ij...',bf.T,bf.T).reshape(-1, bf.shape[0]).T
             bf  = np.column_stack((bf, bf2))
     return bf
 
-def fourier_bf(pst,para):
+def fourier_bf(pst, para):
     """
     Returns Fourier (Hanning) basis functions
     """
