@@ -255,9 +255,9 @@ def run_rsHRF():
         if not args.atlas.endswith(('.nii', '.nii.gz')):
             parser.error('--atlas should end with .nii or .nii.gz')
 
-        all_inputs = layout.get(modality='func', subject=subjects_to_analyze, task='rest', type='preproc', extensions=['nii', 'nii.gz'])
+        all_inputs = layout.get(modality='func', subject=subjects_to_analyze, task='rest', type='bold   ', extensions=['nii', 'nii.gz'])
         if not all_inputs != []:
-            parser.error('There are no files of type *preproc.nii / *preproc.nii.gz '
+            parser.error('There are no files of type *bold.nii / *bold.nii.gz '
                          'Please make sure to have at least one file of the above type '
                          'in the BIDS specification')
         else:
@@ -300,19 +300,19 @@ def run_rsHRF():
                          'structure is present and correct. Datasets can be validated online '
                          'using the BIDS Validator (http://incf.github.io/bids-validator/).')
 
-        all_inputs = layout.get(modality='func', subject=subjects_to_analyze, task='rest', type='preproc', extensions=['nii', 'nii.gz'])
-        all_masks = layout.get(modality='func', subject=subjects_to_analyze, task='rest', type='brainmask', extensions=['nii', 'nii.gz'])
+        all_inputs = layout.get(modality='func', subject=subjects_to_analyze, task='rest', type='bold', extensions=['nii', 'nii.gz'])
+        all_masks = layout.get(modality='func', subject=subjects_to_analyze, task='rest', type='mask', extensions=['nii', 'nii.gz'])
         if not all_inputs != []:
-            parser.error('There are no files of type *preproc.nii / *preproc.nii.gz '
+            parser.error('There are no files of type *bold.nii / *bold.nii.gz '
                          'Please make sure to have at least one file of the above type '
                          'in the BIDS specification')
         if not all_masks != []:
-            parser.error('There are no files of type *brainmask.nii / *brainmask.nii.gz '
+            parser.error('There are no files of type *mask.nii / *mask.nii.gz '
                          'Please make sure to have at least one file of the above type '
                          'in the BIDS specification')
         if len(all_inputs) != len(all_masks):
-            parser.error('The number of *preproc.nii / .nii.gz and the number of '
-                         '*brainmask.nii / .nii.gz are different. Please make sure that '
+            parser.error('The number of *bold.nii / .nii.gz and the number of '
+                         '*mask.nii / .nii.gz are different. Please make sure that '
                          'there is one mask for each input_file present')
 
         all_inputs.sort()
@@ -321,8 +321,8 @@ def run_rsHRF():
         all_prefix_match = False
         prefix_match_count = 0
         for i in range(len(all_inputs)):
-            input_prefix = all_inputs[i].filename.split('/')[-1].split('_preproc')[0]
-            mask_prefix = all_masks[i].filename.split('/')[-1].split('_brainmask')[0]
+            input_prefix = all_inputs[i].filename.split('/')[-1].split('_desc')[0]
+            mask_prefix = all_masks[i].filename.split('/')[-1].split('_desc')[0]
             if input_prefix == mask_prefix:
                 prefix_match_count += 1
             else:
