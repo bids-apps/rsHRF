@@ -141,8 +141,9 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
         dic["event_number"] = event_number
         dic["data_deconv"]  = data_deconv
         ext = '_hrf_deconv.mat'
+    name = name.rsplit('_bold',1)[0]
     sio.savemat(os.path.join(sub_save_dir, name + ext), dic)
-    HRF_para_str = ['Height', 'Time2peak', 'FWHM']
+    HRF_para_str = ['Height', 'T2P', 'FWHM']
     if mode != "time-series":
         mask_data = np.zeros(mask_shape).flatten(order='F')
         for i in range(3):
@@ -152,7 +153,7 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
             mask_data = mask_data.reshape(mask_shape, order='F')
             spm_dep.spm.spm_write_vol(v1, mask_data, fname, file_type)
             mask_data = mask_data.flatten(order='F')
-        fname = os.path.join(sub_save_dir, name + '_event_number.nii')
+        fname = os.path.join(sub_save_dir, name + '_eventnumber')
         mask_data[voxel_ind] = event_number
         mask_data = mask_data.reshape(mask_shape, order='F')
         spm_dep.spm.spm_write_vol(v1, mask_data, fname, file_type)
@@ -184,7 +185,7 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
     plt.plot(para['TR'] * np.arange(1, np.amax(hrfa_TR[:, pos].shape) + 1),
              hrfa_TR[:, pos], linewidth=1)
     plt.xlabel('time (s)')
-    plt.savefig(os.path.join(sub_save_dir, name + '_plot_1.png'))
+    plt.savefig(os.path.join(sub_save_dir, name + '_hrf_plot.png'))
     plt.figure()
     plt.plot(para['TR'] * np.arange(1, nobs + 1),
              np.nan_to_num(stats.zscore(bold_sig[:, pos], ddof=1)),
@@ -199,6 +200,6 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
     plt.setp(markerline, 'color', 'k', 'markersize', 3, 'marker', 'd')
     plt.legend(['BOLD', 'deconvolved', 'events'])
     plt.xlabel('time (s)')
-    plt.savefig(os.path.join(sub_save_dir, name + '_plot_2.png'))
+    plt.savefig(os.path.join(sub_save_dir, name + '_deconvolution_plot.png'))
     print('Done')
     return 0
