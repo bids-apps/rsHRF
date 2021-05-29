@@ -52,6 +52,12 @@ def get_parser():
                              'provided all subjects should be analyzed. Multiple '
                              'participants can be specified with a space separated list.',
                         nargs="+")
+   
+    parser.add_argument('--task_label', action='store', default='rest',
+                        help='Label of the resting-state task. The label '
+                        'corresponds to sub-<participant_label>/func/sub-<participant_label>_task-<task_label>'
+                        'from the BIDS spec (default is <task_label> = rest')
+    
 
     group_mask = parser.add_mutually_exclusive_group(required=False)
 
@@ -255,7 +261,7 @@ def run_rsHRF():
         if not args.atlas.endswith(('.nii', '.nii.gz')):
             parser.error('--atlas should end with .nii or .nii.gz')
 
-        all_inputs = layout.get(modality='func', subject=subjects_to_analyze, task='rest', type='bold', extensions=['nii', 'nii.gz'])
+        all_inputs = layout.get(modality='func', subject=subjects_to_analyze, task=args.task_label, type='bold', extensions=['nii', 'nii.gz'])
         if not all_inputs != []:
             parser.error('There are no files of type *bold.nii / *bold.nii.gz '
                          'Please make sure to have at least one file of the above type '
@@ -300,8 +306,8 @@ def run_rsHRF():
                          'structure is present and correct. Datasets can be validated online '
                          'using the BIDS Validator (http://incf.github.io/bids-validator/).')
 
-        all_inputs = layout.get(modality='func', subject=subjects_to_analyze, task='restingstate', type='bold', extensions=['nii', 'nii.gz'])
-        all_masks = layout.get(modality='func', subject=subjects_to_analyze, task='restingstate', type='mask', extensions=['nii', 'nii.gz'])
+        all_inputs = layout.get(modality='func', subject=subjects_to_analyze, task=args.task_label, type='bold', extensions=['nii', 'nii.gz'])
+        all_masks = layout.get(modality='func', subject=subjects_to_analyze, task=args.task_label, type='mask', extensions=['nii', 'nii.gz'])
         if not all_inputs != []:
             parser.error('There are no files of type *bold.nii / *bold.nii.gz '
                          'Please make sure to have at least one file of the above type '
