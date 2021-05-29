@@ -4,7 +4,7 @@ import os.path as op
 from argparse      import ArgumentParser
 from bids.grabbids import BIDSLayout
 
-from rsHRF      import spm_dep, fourD_rsHRF
+from rsHRF      import spm_dep, fourD_rsHRF, utils
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -242,6 +242,8 @@ def run_rsHRF():
                                 dtype='int')
         fourD_rsHRF.demo_rsHRF(args.input_file, args.atlas, args.output_dir, para, args.n_jobs, file_type, mode='input', temporal_mask=temporal_mask, wiener=args.wiener)
 
+    if args.bids_dir is not None:
+        utils.bids.write_derivative_description(args.bids_dir, args.output_dir)
 
     if args.bids_dir is not None and args.atlas is not None:
         # carry analysis with bids_dir and 1 atlas
