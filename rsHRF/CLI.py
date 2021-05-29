@@ -1,9 +1,10 @@
 import sys
 import numpy   as np
 import os.path as op
+import json
 from argparse      import ArgumentParser
 from bids.grabbids import BIDSLayout
-
+from pathlib import Path
 from rsHRF      import spm_dep, fourD_rsHRF, utils
 
 import warnings
@@ -244,7 +245,27 @@ def run_rsHRF():
 
     if args.bids_dir is not None:
         utils.bids.write_derivative_description(args.bids_dir, args.output_dir)
-
+        bids_dir = Path(args.bids_dir)
+        fname = bids_dir / 'dataset_description.json'
+        
+        if fname.exists():
+                desc = json.loads(Path(fname).read_text())
+                if 'DataType' in desc :
+                    if desc['DataType'] != 'derivative':
+                        parser.error('Input data is not a derivative dataset'
+                                     ' (DataType in dataset_description.json is not equal to "derivative")')
+                                       
+                else :
+                    parser.error('DataType is not defined in the dataset_description.json file. Please make sure DataType is defined. '
+                                 'Information on the dataset_description.json file can be found online '
+                                 '(https://bids-specification.readthedocs.io/en/stable/03-modality-agnostic-files.html'
+                                 '#derived-dataset-and-pipeline-description)')
+        else :
+            parser.error('Could not find dataset_description.json file. Please make sure the BIDS data '
+                         'structure is present and correct. Datasets can be validated online '
+                         'using the BIDS Validator (http://incf.github.io/bids-validator/).')
+    
+        
     if args.bids_dir is not None and args.atlas is not None:
         # carry analysis with bids_dir and 1 atlas
         layout = BIDSLayout(args.bids_dir)
