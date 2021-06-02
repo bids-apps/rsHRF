@@ -5,6 +5,7 @@ import numpy             as np
 import nibabel           as nib
 import scipy.io          as sio
 import matplotlib.pyplot as plt
+from bids.layout import BIDSLayout, parse_file_entities 
 from scipy        import stats, signal
 from scipy.sparse import lil_matrix
 from rsHRF        import spm_dep, processing, parameters, basis_functions, utils, iterative_wiener_deconv
@@ -120,19 +121,11 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
         event_number[:, voxel_id] = np.amax(event_bold[voxel_id].shape)
     # setting the output-path
     if mode == 'bids' or mode == 'bids w/ atlas':
-        try:
-            sub_save_dir = os.path.join(
-                output_dir, 'sub-' + input_file.subject,
-                'session-' + input_file.session,
-                input_file.modality
-            )
-        except AttributeError as e:
-            sub_save_dir = os.path.join(
-                output_dir, 'sub-' + input_file.subject,
-                input_file.modality
-            )
+            layout_output = BIDSLayout(output_dir)
+            entities = parse_file_entities([input_file])
+            sub_save_dir = layout_output.build_path(entities).rsplit('/',1)[0]            
     else:
-        sub_save_dir = output_dir
+        sub_save_dir = output_dir        
     if not os.path.isdir(sub_save_dir):
         os.makedirs(sub_save_dir, exist_ok=True)
     dic = {'para': para, 'hrfa': hrfa, 'event_bold': event_bold, 'PARA': PARA}
