@@ -25,15 +25,15 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
     # for four-dimensional input
     if mode != 'time-series':
         if mode == 'bids' or mode == 'bids w/ atlas':
-            name = input_file.filename.split('/')[-1].split('.')[0]
-            v1 = spm_dep.spm.spm_vol(input_file.filename)
+            name = input_file.split('/')[-1].split('.')[0]
+            v1 = spm_dep.spm.spm_vol(input_file)
         else:
             name = input_file.split('/')[-1].split('.')[0]
             v1 = spm_dep.spm.spm_vol(input_file)
         if mask_file != None:
             if mode == 'bids':
-                mask_name = mask_file.filename.split('/')[-1].split('.')[0]
-                v = spm_dep.spm.spm_vol(mask_file.filename)
+                mask_name = mask_file.split('/')[-1].split('.')[0]
+                v = spm_dep.spm.spm_vol(mask_file)
             else:
                 mask_name = mask_file.split('/')[-1].split('.')[0]
                 v = spm_dep.spm.spm_vol(mask_file)

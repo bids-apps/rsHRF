@@ -3,7 +3,7 @@ import numpy   as np
 import os.path as op
 import json
 from argparse      import ArgumentParser
-from bids.grabbids import BIDSLayout
+from bids.layout import BIDSLayout
 from pathlib import Path
 from rsHRF      import spm_dep, fourD_rsHRF, utils
 
@@ -54,12 +54,10 @@ def get_parser():
                              'participants can be specified with a space separated list.',
                         nargs="+")
    
-    parser.add_argument('--task_label', action='store', default='rest',
-                        help='Label of the resting-state task. The label '
-                        'corresponds to sub-<participant_label>/func/sub-<participant_label>_task-<task_label>'
-                        'from the BIDS spec (default is <task_label> = rest')
+    parser.add_argument('--bids_filter_file', action='store', type=op.abspath,
+                        help='a JSON file describing custom BIDS input filters using PyBIDS. '
+                             'For further details, please check out http://bids-apps.neuroimaging.io/rsHRF/')
     
-
     group_mask = parser.add_mutually_exclusive_group(required=False)
 
     group_mask.add_argument('--atlas', action='store', type=op.abspath,
@@ -268,8 +266,8 @@ def run_rsHRF():
         
     if args.bids_dir is not None and args.atlas is not None:
         # carry analysis with bids_dir and 1 atlas
-        layout = BIDSLayout(args.bids_dir)
-
+        layout = BIDSLayout(args.bids_dir, validate=False, config =['bids', 'derivatives'])
+        
         if args.participant_label:
             input_subjects = args.participant_label
             subjects_to_analyze = layout.get_subjects(subject=input_subjects)
@@ -283,8 +281,23 @@ def run_rsHRF():
 
         if not args.atlas.endswith(('.nii', '.nii.gz')):
             parser.error('--atlas should end with .nii or .nii.gz')
-
-        all_inputs = layout.get(modality='func', subject=subjects_to_analyze, task=args.task_label, type='bold', extensions=['nii', 'nii.gz'])
+        
+        if args.bids_filter_file is not None:
+            filter_list = json.loads(Path(args.bids_filter_file).read_text()) 
+            
+            default_input = {'extension': 'nii.gz', 
+                             'datatype' : 'func', 
+                             'desc': 'preproc', 
+                             'task' : 'rest',
+                             'suffix': 'bold'}
+            default_input['subject']=subjects_to_analyze            
+            default_input.update(filter_list['bold'])
+            
+            all_inputs = layout.get(return_type='filename',**default_input)
+        
+        else :
+            all_inputs = layout.get(return_type='filename',datatype='func', subject=subjects_to_analyze, task='rest',desc='preproc',suffix='bold', extension=['nii', 'nii.gz'])
+            
         if not all_inputs != []:
             parser.error('There are no files of type *bold.nii / *bold.nii.gz '
                          'Please make sure to have at least one file of the above type '
@@ -293,9 +306,9 @@ def run_rsHRF():
             num_errors = 0
             for file_count in range(len(all_inputs)):
                 try:
-                    TR = layout.get_metadata(all_inputs[file_count].filename)['RepetitionTime']
+                    TR = layout.get_metadata(all_inputs[file_count])['RepetitionTime']
                 except KeyError as e:
-                    TR = spm_dep.spm.spm_vol(all_inputs[file_count].filename).header.get_zooms()[-1]
+                    TR = spm_dep.spm.spm_vol(all_inputs[file_count]).header.get_zooms()[-1]
                 para['TR'] = TR
                 para['dt'] = para['TR'] / para['T']
                 para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
@@ -316,7 +329,7 @@ def run_rsHRF():
 
     if args.bids_dir is not None and args.brainmask:
         # carry analysis with bids_dir and brainmask
-        layout = BIDSLayout(args.bids_dir)
+        layout = BIDSLayout(args.bids_dir, validate=False, config =['bids', 'derivatives'])
 
         if args.participant_label:
             input_subjects = args.participant_label
@@ -329,8 +342,34 @@ def run_rsHRF():
                          'structure is present and correct. Datasets can be validated online '
                          'using the BIDS Validator (http://incf.github.io/bids-validator/).')
 
-        all_inputs = layout.get(modality='func', subject=subjects_to_analyze, task=args.task_label, type='bold', extensions=['nii', 'nii.gz'])
-        all_masks = layout.get(modality='func', subject=subjects_to_analyze, task=args.task_label, type='mask', extensions=['nii', 'nii.gz'])
+        if args.bids_filter_file is not None:
+            filter_list = json.loads(Path(args.bids_filter_file).read_text()) 
+            
+            default_input = {'extension': 'nii.gz', 
+                             'datatype' : 'func', 
+                             'desc': 'preproc', 
+                             'task' : 'rest',
+                             'suffix': 'bold'}
+            default_input['subject']=subjects_to_analyze            
+            default_input.update(filter_list['bold'])
+            
+            all_inputs = layout.get(return_type='filename',**default_input)
+            
+            default_mask={'extension': 'nii.gz',
+                          'datatype': 'func',
+                          'desc': 'brain',
+                          'task':'rest',
+                          'suffix':'mask'}
+            default_mask['subject']=subjects_to_analyze
+            default_mask.update(filter_list['mask'])
+            
+            all_masks = layout.get(return_type='filename',**default_mask)
+            
+            
+        else:            
+            all_inputs = layout.get(return_type='filename',datatype='func', subject=subjects_to_analyze, task='rest',desc='preproc',suffix='bold', extension=['nii', 'nii.gz'])
+            all_masks = layout.get(return_type='filename', datatype='func', subject=subjects_to_analyze, task='rest',desc='brain',suffix='mask', extension=['nii', 'nii.gz'])
+       
         if not all_inputs != []:
             parser.error('There are no files of type *bold.nii / *bold.nii.gz '
                          'Please make sure to have at least one file of the above type '
@@ -350,8 +389,8 @@ def run_rsHRF():
         all_prefix_match = False
         prefix_match_count = 0
         for i in range(len(all_inputs)):
-            input_prefix = all_inputs[i].filename.split('/')[-1].split('_desc')[0]
-            mask_prefix = all_masks[i].filename.split('/')[-1].split('_desc')[0]
+            input_prefix = all_inputs[i].split('/')[-1].split('_desc')[0]
+            mask_prefix = all_masks[i].split('/')[-1].split('_desc')[0]
             if input_prefix == mask_prefix:
                 prefix_match_count += 1
             else:
@@ -366,16 +405,16 @@ def run_rsHRF():
         else:
             num_errors = 0
             for file_count in range(len(all_inputs)):
-                file_type = all_inputs[file_count].filename.split('bold')[1]
+                file_type = all_inputs[file_count].split('bold')[1]
                 if file_type == ".nii" or file_type == ".nii.gz":
                     try:
-                        TR = layout.get_metadata(all_inputs[file_count].filename)['RepetitionTime']
+                        TR = layout.get_metadata(all_inputs[file_count])['RepetitionTime']
                     except KeyError as e:
-                        TR = spm_dep.spm.spm_vol(all_inputs[file_count].filename).header.get_zooms()[-1]
+                        TR = spm_dep.spm.spm_vol(all_inputs[file_count]).header.get_zooms()[-1]
                     para['TR'] = TR
                 else:
-                    spm_dep.spm.spm_vol(all_inputs[file_count].filename)
-                    TR = spm_dep.spm.spm_vol(all_inputs[file_count].filename).get_arrays_from_intent("NIFTI_INTENT_TIME_SERIES")[0].meta.get_metadata()["TimeStep"]
+                    spm_dep.spm.spm_vol(all_inputs[file_count])
+                    TR = spm_dep.spm.spm_vol(all_inputs[file_count]).get_arrays_from_intent("NIFTI_INTENT_TIME_SERIES")[0].meta.get_metadata()["TimeStep"]
                     para['TR'] = float(TR) * 0.001
 
 
