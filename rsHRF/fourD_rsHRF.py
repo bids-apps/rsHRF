@@ -125,7 +125,7 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
     # setting the output-path
     if mode == 'bids' or mode == 'bids w/ atlas':
             layout_output = BIDSLayout(output_dir)
-            entities = parse_file_entities([input_file])
+            entities = parse_file_entities(input_file)
             sub_save_dir = layout_output.build_path(entities).rsplit('/',1)[0]            
     else:
         sub_save_dir = output_dir        
