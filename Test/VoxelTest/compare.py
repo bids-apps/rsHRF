@@ -5,8 +5,7 @@ import matplotlib.pyplot as plt
 
 def compare(num, with_plots=False):
     Name = ['Canonical HRF (with time derivative)', 'Canonical HRF (with time and dispersion derivatives)',
-            'Gamma functions', 'Fourier set', 'Fourier set (Hanning)', \
-            'FIR', 'sFIR']
+            'Gamma functions', 'Fourier set', 'Fourier set (Hanning)']
 
     name = "./Data/hrf_" + Name[num] + "_"
     pythonPath = name + "python.txt"
@@ -14,8 +13,6 @@ def compare(num, with_plots=False):
 
     x = (np.loadtxt(pythonPath, delimiter=", ").T)
     y = scipy.io.loadmat(matlabPath)["hrfa"]
-    if 'FIR' in name:
-        y = y[:-1,:]
     x = np.expand_dims(x, axis=1)
     print(Name[num], ": ", stats.pearsonr(x[:,0],y[:,0])[0])
 
@@ -26,5 +23,5 @@ def compare(num, with_plots=False):
         plt.show()
 
 if __name__ == "__main__":
-    for i in range(0, 7):
-        compare(i)
+    for i in range(0, 5):
+        compare(i, with_plots=False)

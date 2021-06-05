@@ -50,9 +50,9 @@ for i in range(0, 7):
         para['thr']   = int(parameterFile[10])
     else:
         para['thr']   = [int(parameterFile[10])]
-    path       = '<Path_To_Directory:/NITRC-multi-file-downloads/sub-10171/func/>' # path to input directory
-    input_file = path + 'sub-10171_task-rest_bold_space-MNI152NLin2009cAsym_preproc.nii'
-    mask_file  = path + 'sub-10171_task-rest_bold_space-MNI152NLin2009cAsym_brainmask.nii'
+    path = '/home/redhood/Desktop/Work/GSoC-2020/rsHRF/Test/NITRC-multi-file-downloads/sub-10171/func/' # path to input directory
+    input_file = path + 'sub-10171_bold_space-T1w_preproc_bold.nii'
+    mask_file  = path + 'sub-10171_bold_space-T1w_brainmask.nii'
     file_type  = ".nii"
     mode       = "file"
     name       = input_file.split('/')[-1].split('.')[0]
