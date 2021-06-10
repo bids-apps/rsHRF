@@ -5,6 +5,7 @@ import numpy             as np
 import nibabel           as nib
 import scipy.io          as sio
 import matplotlib.pyplot as plt
+from bids.layout  import BIDSLayout, parse_file_entities 
 from scipy        import stats, signal
 from scipy.sparse import lil_matrix
 from rsHRF        import spm_dep, processing, parameters, basis_functions, utils, iterative_wiener_deconv
@@ -25,15 +26,15 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
     # for four-dimensional input
     if mode != 'time-series':
         if mode == 'bids' or mode == 'bids w/ atlas':
-            name = input_file.filename.split('/')[-1].split('.')[0]
-            v1 = spm_dep.spm.spm_vol(input_file.filename)
+            name = input_file.split('/')[-1].split('.')[0]
+            v1 = spm_dep.spm.spm_vol(input_file)
         else:
             name = input_file.split('/')[-1].split('.')[0]   
             v1 = spm_dep.spm.spm_vol(input_file)
         if mask_file != None:
             if mode == 'bids':
-                mask_name = mask_file.filename.split('/')[-1].split('.')[0]
-                v = spm_dep.spm.spm_vol(mask_file.filename)
+                mask_name = mask_file.split('/')[-1].split('.')[0]
+                v = spm_dep.spm.spm_vol(mask_file)
             else:
                 mask_name = mask_file.split('/')[-1].split('.')[0]
                 v = spm_dep.spm.spm_vol(mask_file)
@@ -119,19 +120,13 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
         else:
             data_deconv[:, voxel_id] = iterative_wiener_deconv.rsHRF_iterative_wiener_deconv(bold_sig_deconv[:, voxel_id], hrf)
         event_number[:, voxel_id] = np.amax(event_bold[voxel_id].shape)
+    print('Done')
+    print('saving output')
     # setting the output-path
     if mode == 'bids' or mode == 'bids w/ atlas':
-        try:
-            sub_save_dir = os.path.join(
-                output_dir, 'sub-' + input_file.subject,
-                'session-' + input_file.session,
-                input_file.modality
-            )
-        except AttributeError as e:
-            sub_save_dir = os.path.join(
-                output_dir, 'sub-' + input_file.subject,
-                input_file.modality
-            )
+        layout_output = BIDSLayout(output_dir)
+        entities = parse_file_entities(input_file)
+        sub_save_dir = layout_output.build_path(entities).rsplit('/',1)[0]            
     else:
         sub_save_dir = output_dir
     if not os.path.isdir(sub_save_dir):
