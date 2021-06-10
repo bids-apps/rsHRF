@@ -121,7 +121,7 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
             data_deconv[:, voxel_id] = iterative_wiener_deconv.rsHRF_iterative_wiener_deconv(bold_sig_deconv[:, voxel_id], hrf)
         event_number[:, voxel_id] = np.amax(event_bold[voxel_id].shape)
     print('Done')
-    print('saving output')
+    print('Saving Output ...')
     # setting the output-path
     if mode == 'bids' or mode == 'bids w/ atlas':
         layout_output = BIDSLayout(output_dir)
