@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/python:3.6
+      - image: circleci/python:3.9
     steps:
       - checkout
       - run:
@@ -35,7 +35,6 @@ jobs:
             twine upload dist/*
       - setup_remote_docker:
           docker_layer_caching: false
-      
       - run:
           name: Install Docker client
           command: |
@@ -51,6 +50,19 @@ jobs:
             docker build -t bids/rshrf:latest -t bids/rshrf:$CIRCLE_TAG .
             docker push bids/rshrf:latest
             docker push bids/rshrf:$CIRCLE_TAG
+  test:
+    docker:
+      - image: circleci/python:3.9
+    steps:
+      - checkout 
+      - run:
+        name: run unit tests
+        command: | 
+          python3 -m venv venv
+          . venv/bin/activate
+          pip3 install pytest 
+          pytest rsHRF/unit_tests/ -p no:warnings
+
 workflows:
   version: 2
   build_and_deploy:
@@ -62,3 +74,6 @@ workflows:
             branches:
               only:
                 -master
+      - test:
+          requires:
+            - build
