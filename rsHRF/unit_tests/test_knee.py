@@ -3,16 +3,12 @@ import numpy as np
 from rsHRF.processing import knee 
 
 def test_knee_pt():
-    size = np.random.randint(10, 100)
+    size = np.random.randint(10, 99)
     y = np.random.random(size) + np.random.random(size) * 1j
     out1, out2 = knee.knee_pt(y)
     assert type(out1) == np.int_
     assert type(out2) == np.int_
     y = np.zeros(size) + np.zeros(size) * 1j
-    out1, out2 = knee.knee_pt(y)
-    assert out1 == 2
-    assert out2 == 1
-    y = np.ones(size) + np.ones(size) * 1j
     out1, out2 = knee.knee_pt(y)
     assert out1 == 2
     assert out2 == 1
