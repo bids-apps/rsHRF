@@ -3,7 +3,17 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
-def knee_pt(y, x=None):
+def knee_pt(y):
+    res_x, _id = knee_pt_helper(y)
+    _idm = np.argmin(y)
+    ratio = np.abs(y[_id]-y[_idm])/np.abs(np.max(y) - np.min(y))
+    if ratio > 0.5:
+        idx_of_result = _idm 
+    else:
+        idx_of_result = _id 
+    return res_x, idx_of_result
+
+def knee_pt_helper(y, x=None):
     x_was_none = False
     use_absolute_dev_p = True
     res_x = np.nan
