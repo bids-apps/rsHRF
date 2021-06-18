@@ -34,7 +34,12 @@ jobs:
             python3 -m venv venv
             . venv/bin/activate
             pip3 install pytest 
+            pip3 install numpy
+            pip3 install nibabel
+            pip3 install scipy
             pytest rsHRF/unit_tests/ -p no:warnings
+          - store_test_results:
+              path: test-results
       - run:
           name: upload to pypi
           command: |
