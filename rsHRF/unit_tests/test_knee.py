@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from rsHRF.processing import knee 
+from ..processing import knee 
 
 def test_knee_pt():
     size = np.random.randint(10, 99)

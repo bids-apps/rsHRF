@@ -1,6 +1,6 @@
 import pytest
 import numpy as np 
-from rsHRF.processing import rest_filter 
+from ..processing import rest_filter 
 
 def test_nextpow2():
     number_of_testcases = 10

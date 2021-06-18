@@ -5,7 +5,7 @@ import math
 import numpy   as np
 import nibabel as nib
 from scipy.special import gammaln
-from rsHRF.spm_dep import spm
+from ..spm_dep import spm
 
 SHAPE = (10, 10, 10, 10)
 

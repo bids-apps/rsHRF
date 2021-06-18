@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from rsHRF.basis_functions import basis_functions
+from ..basis_functions import basis_functions
 
 def test_fourier_bf():
     assert type(basis_functions.fourier_bf(np.random.random(5), {'estimation': 'fourier', 'order': 3})) == type(np.random.random(1))

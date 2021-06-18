@@ -1,6 +1,6 @@
 import pytest
 import numpy as np 
-from rsHRF import parameters 
+from .. import parameters 
 
 def test_wgr_get_parameters():
     assert type(parameters.wgr_get_parameters(np.random.random(np.random.randint(1, 100)), np.random.uniform(0, 5))) == type(np.asarray([]))

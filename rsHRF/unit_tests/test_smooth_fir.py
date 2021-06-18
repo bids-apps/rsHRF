@@ -1,6 +1,6 @@
 import pytest
 import numpy as np 
-from rsHRF.sFIR import smooth_fir 
+from ..sFIR import smooth_fir 
 
 def test_wgr_regress():
     val1 = np.random.randint(1, 10)

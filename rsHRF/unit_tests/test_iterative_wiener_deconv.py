@@ -1,6 +1,6 @@
 import pytest
 import numpy as np 
-from rsHRF import iterative_wiener_deconv
+from .. import iterative_wiener_deconv
 
 def test_rsHRF_iterative_wiener_deconv():
     var1 = np.random.randint(100, 150)

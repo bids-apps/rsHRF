@@ -1,8 +1,8 @@
 import pytest 
 import numpy as np
-from rsHRF.spm_dep    import spm
-from rsHRF.processing import knee
-from rsHRF.canon import canon_hrf2dd
+from ..spm_dep    import spm
+from ..processing import knee
+from ..canon import canon_hrf2dd
 
 def test_wgr_spm_get_canonhrf():
     xBF  = {}
