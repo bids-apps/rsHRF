@@ -1,5 +1,6 @@
 import pyyawt
 import numpy as np 
+from   rsHRF.processing import knee 
 
 def rsHRF_iterative_wiener_deconv(y, h, Iterations=1000):
     N            = y.shape[0]
@@ -15,9 +16,21 @@ def rsHRF_iterative_wiener_deconv(y, h, Iterations=1000):
     tempreg      = Nf/sqrdtempnorm
     Pxx0         = np.square(abs(np.multiply(Y, (np.divide(np.conj(H), (Phh + N*tempreg))))))
     Pxx          = Pxx0
+    Sf           = Pxx.reshape(-1, 1)
     for i in range(0, Iterations):
         M           = np.divide(np.multiply(np.multiply(np.conjugate(H), Pxx), Y), np.add(np.multiply(np.square(abs(H)), Pxx), Nf))
         PxxY        = np.divide(np.multiply(Pxx, Nf), np.add(np.multiply(np.square(abs(H)), Pxx), Nf))
         Pxx         = np.add(PxxY, np.square(abs(M)))
+        Sf          = np.concatenate((Sf, Pxx.reshape(-1, 1)), axis = 1)
+    dSf             = np.diff(Sf, 1, 1)
+    dSfmse          = np.mean(np.square(dSf), axis=1)
+    _, idx          = knee.knee_pt(dSfmse)
+    idm             = np.argmin(dSfmse)
+    ratio           = np.abs(dSfmse[idx] - dSfmse[idm])/(np.abs(np.max(dSfmse) - np.min(dSfmse)))
+    if ratio > 0.5:
+        id0 = idm 
+    else:
+        id0 = idx 
+    Pxx             = Sf[:,id0+1]
     WienerFilterEst = np.divide(np.multiply(np.conj(H), Pxx), np.add(np.multiply(np.square(abs(H)), Pxx), Nf))
     return np.real(np.fft.ifft(np.multiply(WienerFilterEst, Y)))

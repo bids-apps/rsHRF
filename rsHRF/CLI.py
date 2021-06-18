@@ -1,10 +1,11 @@
 import sys
 import numpy   as np
 import os.path as op
+import json
 from argparse      import ArgumentParser
-from bids.grabbids import BIDSLayout
-
-from rsHRF      import spm_dep, fourD_rsHRF
+from bids.layout import BIDSLayout
+from pathlib import Path
+from rsHRF      import spm_dep, fourD_rsHRF, utils
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -52,7 +53,11 @@ def get_parser():
                              'provided all subjects should be analyzed. Multiple '
                              'participants can be specified with a space separated list.',
                         nargs="+")
-
+   
+    parser.add_argument('--bids_filter_file', action='store', type=op.abspath,
+                        help='a JSON file describing custom BIDS input filters using PyBIDS. '
+                             'For further details, please check out http://bids-apps.neuroimaging.io/rsHRF/')
+    
     group_mask = parser.add_mutually_exclusive_group(required=False)
 
     group_mask.add_argument('--atlas', action='store', type=op.abspath,
@@ -236,11 +241,33 @@ def run_rsHRF():
                                 dtype='int')
         fourD_rsHRF.demo_rsHRF(args.input_file, args.atlas, args.output_dir, para, args.n_jobs, file_type, mode='input', temporal_mask=temporal_mask, wiener=args.wiener)
 
-
+    if args.bids_dir is not None:
+        utils.bids.write_derivative_description(args.bids_dir, args.output_dir)
+        bids_dir = Path(args.bids_dir)
+        fname = bids_dir / 'dataset_description.json'
+        
+        if fname.exists():
+                desc = json.loads(Path(fname).read_text())
+                if 'DataType' in desc :
+                    if desc['DataType'] != 'derivative':
+                        parser.error('Input data is not a derivative dataset'
+                                     ' (DataType in dataset_description.json is not equal to "derivative")')
+                                       
+                else :
+                    parser.error('DataType is not defined in the dataset_description.json file. Please make sure DataType is defined. '
+                                 'Information on the dataset_description.json file can be found online '
+                                 '(https://bids-specification.readthedocs.io/en/stable/03-modality-agnostic-files.html'
+                                 '#derived-dataset-and-pipeline-description)')
+        else :
+            parser.error('Could not find dataset_description.json file. Please make sure the BIDS data '
+                         'structure is present and correct. Datasets can be validated online '
+                         'using the BIDS Validator (http://incf.github.io/bids-validator/).')
+    
+        
     if args.bids_dir is not None and args.atlas is not None:
         # carry analysis with bids_dir and 1 atlas
-        layout = BIDSLayout(args.bids_dir)
-
+        layout = BIDSLayout(args.bids_dir, validate=False, config =['bids', 'derivatives'])
+        
         if args.participant_label:
             input_subjects = args.participant_label
             subjects_to_analyze = layout.get_subjects(subject=input_subjects)
@@ -254,19 +281,34 @@ def run_rsHRF():
 
         if not args.atlas.endswith(('.nii', '.nii.gz')):
             parser.error('--atlas should end with .nii or .nii.gz')
-
-        all_inputs = layout.get(modality='func', subject=subjects_to_analyze, task='rest', type='preproc', extensions=['nii', 'nii.gz'])
+        
+        if args.bids_filter_file is not None:
+            filter_list = json.loads(Path(args.bids_filter_file).read_text()) 
+            
+            default_input = {'extension': 'nii.gz', 
+                             'datatype' : 'func', 
+                             'desc': 'preproc', 
+                             'task' : 'rest',
+                             'suffix': 'bold'}
+            default_input['subject']=subjects_to_analyze            
+            default_input.update(filter_list['bold'])
+            
+            all_inputs = layout.get(return_type='filename',**default_input)
+        
+        else :
+            all_inputs = layout.get(return_type='filename',datatype='func', subject=subjects_to_analyze, task='rest',desc='preproc',suffix='bold', extension=['nii', 'nii.gz'])
+            
         if not all_inputs != []:
-            parser.error('There are no files of type *preproc.nii / *preproc.nii.gz '
+            parser.error('There are no files of type *bold.nii / *bold.nii.gz '
                          'Please make sure to have at least one file of the above type '
                          'in the BIDS specification')
         else:
             num_errors = 0
             for file_count in range(len(all_inputs)):
                 try:
-                    TR = layout.get_metadata(all_inputs[file_count].filename)['RepetitionTime']
+                    TR = layout.get_metadata(all_inputs[file_count])['RepetitionTime']
                 except KeyError as e:
-                    TR = spm_dep.spm.spm_vol(all_inputs[file_count].filename).header.get_zooms()[-1]
+                    TR = spm_dep.spm.spm_vol(all_inputs[file_count]).header.get_zooms()[-1]
                 para['TR'] = TR
                 para['dt'] = para['TR'] / para['T']
                 para['lag'] = np.arange(np.fix(para['min_onset_search'] / para['dt']),
@@ -287,7 +329,7 @@ def run_rsHRF():
 
     if args.bids_dir is not None and args.brainmask:
         # carry analysis with bids_dir and brainmask
-        layout = BIDSLayout(args.bids_dir)
+        layout = BIDSLayout(args.bids_dir, validate=False, config =['bids', 'derivatives'])
 
         if args.participant_label:
             input_subjects = args.participant_label
@@ -300,19 +342,45 @@ def run_rsHRF():
                          'structure is present and correct. Datasets can be validated online '
                          'using the BIDS Validator (http://incf.github.io/bids-validator/).')
 
-        all_inputs = layout.get(modality='func', subject=subjects_to_analyze, task='rest', type='preproc', extensions=['nii', 'nii.gz'])
-        all_masks = layout.get(modality='func', subject=subjects_to_analyze, task='rest', type='brainmask', extensions=['nii', 'nii.gz'])
+        if args.bids_filter_file is not None:
+            filter_list = json.loads(Path(args.bids_filter_file).read_text()) 
+            
+            default_input = {'extension': 'nii.gz', 
+                             'datatype' : 'func', 
+                             'desc': 'preproc', 
+                             'task' : 'rest',
+                             'suffix': 'bold'}
+            default_input['subject']=subjects_to_analyze            
+            default_input.update(filter_list['bold'])
+            
+            all_inputs = layout.get(return_type='filename',**default_input)
+            
+            default_mask={'extension': 'nii.gz',
+                          'datatype': 'func',
+                          'desc': 'brain',
+                          'task':'rest',
+                          'suffix':'mask'}
+            default_mask['subject']=subjects_to_analyze
+            default_mask.update(filter_list['mask'])
+            
+            all_masks = layout.get(return_type='filename',**default_mask)
+            
+            
+        else:            
+            all_inputs = layout.get(return_type='filename',datatype='func', subject=subjects_to_analyze, task='rest',desc='preproc',suffix='bold', extension=['nii', 'nii.gz'])
+            all_masks = layout.get(return_type='filename', datatype='func', subject=subjects_to_analyze, task='rest',desc='brain',suffix='mask', extension=['nii', 'nii.gz'])
+       
         if not all_inputs != []:
-            parser.error('There are no files of type *preproc.nii / *preproc.nii.gz '
+            parser.error('There are no files of type *bold.nii / *bold.nii.gz '
                          'Please make sure to have at least one file of the above type '
                          'in the BIDS specification')
         if not all_masks != []:
-            parser.error('There are no files of type *brainmask.nii / *brainmask.nii.gz '
+            parser.error('There are no files of type *mask.nii / *mask.nii.gz '
                          'Please make sure to have at least one file of the above type '
                          'in the BIDS specification')
         if len(all_inputs) != len(all_masks):
-            parser.error('The number of *preproc.nii / .nii.gz and the number of '
-                         '*brainmask.nii / .nii.gz are different. Please make sure that '
+            parser.error('The number of *bold.nii / .nii.gz and the number of '
+                         '*mask.nii / .nii.gz are different. Please make sure that '
                          'there is one mask for each input_file present')
 
         all_inputs.sort()
@@ -321,8 +389,8 @@ def run_rsHRF():
         all_prefix_match = False
         prefix_match_count = 0
         for i in range(len(all_inputs)):
-            input_prefix = all_inputs[i].filename.split('/')[-1].split('_preproc')[0]
-            mask_prefix = all_masks[i].filename.split('/')[-1].split('_brainmask')[0]
+            input_prefix = all_inputs[i].split('/')[-1].split('_desc')[0]
+            mask_prefix = all_masks[i].split('/')[-1].split('_desc')[0]
             if input_prefix == mask_prefix:
                 prefix_match_count += 1
             else:
@@ -337,16 +405,16 @@ def run_rsHRF():
         else:
             num_errors = 0
             for file_count in range(len(all_inputs)):
-                file_type = op.splitext(all_inputs[file_count].filename)[1]
+                file_type = all_inputs[file_count].split('bold')[1]
                 if file_type == ".nii" or file_type == ".nii.gz":
                     try:
-                        TR = layout.get_metadata(all_inputs[file_count].filename)['RepetitionTime']
+                        TR = layout.get_metadata(all_inputs[file_count])['RepetitionTime']
                     except KeyError as e:
-                        TR = spm_dep.spm.spm_vol(all_inputs[file_count].filename).header.get_zooms()[-1]
+                        TR = spm_dep.spm.spm_vol(all_inputs[file_count]).header.get_zooms()[-1]
                     para['TR'] = TR
                 else:
-                    spm_dep.spm.spm_vol(all_inputs[file_count].filename)
-                    TR = spm_dep.spm.spm_vol(all_inputs[file_count].filename).get_arrays_from_intent("NIFTI_INTENT_TIME_SERIES")[0].meta.get_metadata()["TimeStep"]
+                    spm_dep.spm.spm_vol(all_inputs[file_count])
+                    TR = spm_dep.spm.spm_vol(all_inputs[file_count]).get_arrays_from_intent("NIFTI_INTENT_TIME_SERIES")[0].meta.get_metadata()["TimeStep"]
                     para['TR'] = float(TR) * 0.001
 
 
