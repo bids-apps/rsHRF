@@ -108,9 +108,9 @@ This requires the input dataset to be in valid BIDS format, and have a derivativ
  in the list (which are actually present in the BIDS directory) will be considered.
  The ``sub-`` prefix should not be supplied.
 
-**Select only certain BIDS files to be input to the rsHRF app**:
+**Select only certain BIDS files to be input to the BIDS-App**:
 
-Using the ``--bids_filter_file`` argument, you can pass rsHRF a JSON file that describes a custom BIDS filter for selecting files with PyBIDS, 
+Using the ``--bids_filter_file`` argument, you can pass the BIDS-App a JSON file that describes a custom BIDS filter for selecting files with PyBIDS, 
 with the syntax ``{<query>: {<entity>: <filter>, ...},...}.`` 
 
 Queries can be defined for ```bold``` and/or ```mask``` in the ```.JSON``` file which allows the user to filter the BIDS-data to be input.
@@ -210,7 +210,7 @@ directory. The corresponding mask is the ``mask_file`` that should have a matchi
 
 #### Running the analysis with a BIDS formatted data-set and a common mask file to be used for all the input files present in the data-set.
 
-Note: All input files in the BIDS directory need to be of the type ``*_bold.nii`` or 
+Note: By default all input files in the BIDS directory need to be of the type ``*_bold.nii`` or 
 ``*_bold.nii.gz``. Also, they must be present in the ``func`` directory under their
 respective subject / session folder.
 
@@ -234,7 +234,7 @@ lies in the ``input_dir`` directory. The analysis level is ``participant``. The 
 
 #### Running the analysis with a BIDS formatted data-set that also includes a unique mask file for each of the input file present. 
 
-Note: All input files in the BIDs directory need to have the suffix of the type ``*_bold.nii`` or 
+Note: By default all input files in the BIDs directory need to have the suffix of the type ``*_bold.nii`` or 
 ``*_bold.nii.gz``. The corresponding mask files in the BIDs directory need to
 be of the type ``*_mask.nii`` or ``*_mask.nii.gz``. Also, they must be 
 present in the ``func`` directory under their respective subject / session folder.
