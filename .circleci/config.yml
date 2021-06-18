@@ -29,6 +29,13 @@ jobs:
             python3 setup.py sdist
             python3 setup.py bdist_wheel
       - run:
+          name: run unit tests
+          command: | 
+            python3 -m venv venv
+            . venv/bin/activate
+            pip3 install pytest 
+            pytest rsHRF/unit_tests/ -p no:warnings
+      - run:
           name: upload to pypi
           command: |
             . venv/bin/activate
@@ -50,18 +57,6 @@ jobs:
             docker build -t bids/rshrf:latest -t bids/rshrf:$CIRCLE_TAG .
             docker push bids/rshrf:latest
             docker push bids/rshrf:$CIRCLE_TAG
-  test:
-    docker:
-      - image: circleci/python:3.9
-    steps:
-      - checkout 
-      - run:
-        name: run unit tests
-        command: | 
-          python3 -m venv venv
-          . venv/bin/activate
-          pip3 install pytest 
-          pytest rsHRF/unit_tests/ -p no:warnings
 
 workflows:
   version: 2
@@ -74,6 +69,3 @@ workflows:
             branches:
               only:
                 -master
-      - test:
-          requires:
-            - build

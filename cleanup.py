@@ -13,4 +13,16 @@ def clean(dir):
             clean(each)
 
 if __name__ == "__main__":
+    try:
+        shutil.rmtree('build')
+    except:
+        pass 
+    try:
+        shutil.rmtree('dist')
+    except:
+        pass 
+    try:
+        shutil.rmtree('rsHRF.egg-info')
+    except:
+        pass
     clean(os.getcwd())
