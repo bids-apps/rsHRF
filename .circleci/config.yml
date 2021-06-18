@@ -38,8 +38,6 @@ jobs:
             pip3 install nibabel
             pip3 install scipy
             pytest rsHRF/unit_tests/ -p no:warnings
-          - store_test_results:
-              path: test-results
       - run:
           name: upload to pypi
           command: |
