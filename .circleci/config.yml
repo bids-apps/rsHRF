@@ -37,6 +37,13 @@ jobs:
             pip3 install numpy
             pip3 install nibabel
             pip3 install scipy
+            pip3 install matplotlib 
+            pip3 install pybids==0.11.1
+            pip3 install pandas
+            pip3 install patsy
+            pip3 install mpld3
+            pip3 install joblib 
+            pip3 install pyyawt
             pytest rsHRF/unit_tests/ -p no:warnings
       - run:
           name: upload to pypi
