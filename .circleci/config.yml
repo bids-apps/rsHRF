@@ -33,23 +33,24 @@ jobs:
           command: | 
             python3 -m venv venv
             . venv/bin/activate
-            pip3 install pytest 
-            pip3 install numpy
-            pip3 install nibabel
-            pip3 install scipy
-            pip3 install matplotlib 
-            pip3 install pybids==0.11.1
-            pip3 install pandas
-            pip3 install patsy
-            pip3 install mpld3
-            pip3 install joblib 
-            pip3 install pyyawt
+            pip3 install -r requirements.txt
             pytest rsHRF/unit_tests/ -p no:warnings
       - run:
           name: upload to pypi
           command: |
             . venv/bin/activate
-            twine upload dist/*
+            twine upload dist/* 
+      - run:
+          name: run integration test
+          command: | 
+            python3 -m venv venv
+            . venv/bin/activate
+            pip3 install rshrf
+            mkdir ${HOME}/scratch 
+            mkdir ${HOME}/scratch/downloads
+            wget -c -P ${HOME}/scratch/downloads/ "https://osf.io/xv72t//download"
+            tar xf ${HOME}/scratch/downloads/download -C ${HOME}/scratch
+            rsHRF --bids_dir ${HOME}/scratch/ds002790/derivatives/fmriprep/ --output_dir ${HOME}/scratch/ds002790 --participant_label 0001 --brainmask --estimation canon2dd --analysis_level participant
       - setup_remote_docker:
           docker_layer_caching: false
       - run:
