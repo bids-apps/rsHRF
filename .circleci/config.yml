@@ -51,6 +51,7 @@ jobs:
             wget -c -P ${HOME}/scratch/downloads/ "https://osf.io/xv72t//download"
             tar xf ${HOME}/scratch/downloads/download -C ${HOME}/scratch
             rsHRF --bids_dir ${HOME}/scratch/ds002790/derivatives/fmriprep/ --output_dir ${HOME}/scratch/ds002790 --participant_label 0001 --brainmask --estimation canon2dd --analysis_level participant
+          no_output_timeout: 6h
       - setup_remote_docker:
           docker_layer_caching: false
       - run:
