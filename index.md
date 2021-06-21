@@ -17,7 +17,7 @@ To run the the application in a Graphical User Interface, run ``rsHRF --GUI``. F
 
 ### Usage
 ----
-In essence, the whole usage of the application can be broken down to 7 major steps:
+In essence, the whole usage of the application can be broken down to 8 major steps:
 
 **The input:**
 
@@ -29,8 +29,9 @@ In essence, the whole usage of the application can be broken down to 7 major ste
  * A standalone `` .txt `` file. This option can be accessed using the
  ``--ts`` optional argument followed by the path of the file. 
 
- * A BIDS formatted data-set directory. This option can be accessed using the ``--bids_dir`` optional argument followed by the path of the directory.
-
+ * A BIDS formatted data-set directory. This option can be accessed using the ``--bids_dir`` optional argument followed by the path of the directory. 
+This requires the input dataset to be in valid BIDS format, and have a derivatives type with preprocessed resting-state fMRI data. We highly recommend that you validate your dataset with the free, online [BIDS Validator](https://bids-standard.github.io/bids-validator/).
+   
  Out of the above 3 options, one of them is always required and more than one cannot be supplied at once.
 
 **The mask / atlas files:**
@@ -41,8 +42,7 @@ In essence, the whole usage of the application can be broken down to 7 major ste
  ``--atlas`` optional argument followed by the name of the file.
 
  * The ``--brainmask`` argument which tells the application that the mask files
- are present within the BIDS formatted data-set directory itself (which was supplied
- supplied with ``--bids_dir``).
+ are present within the BIDS formatted data-set directory itself (which was supplied with ``--bids_dir``).
 
  * Out of the above 2 options, both cannot be supplied at once. In the case where neither of the 2 options are supplied, the app proceeds to generate a mask by computing the variance, however, providing a mask-file is strongly recommended.
 
@@ -108,6 +108,56 @@ In essence, the whole usage of the application can be broken down to 7 major ste
  in the list (which are actually present in the BIDS directory) will be considered.
  The ``sub-`` prefix should not be supplied.
 
+**Select only certain BIDS files to be input to the BIDS-App**:
+
+Using the ``--bids_filter_file`` argument, you can pass the BIDS-App a JSON file that describes a custom BIDS filter for selecting files with PyBIDS, 
+with the syntax ``{<query>: {<entity>: <filter>, ...},...}.`` 
+
+Queries can be defined for ```bold``` and/or ```mask``` in the ```.JSON``` file which allows the user to filter the BIDS-data to be input.
+
+For example :
+
+```
+{
+    'bold': {
+     'datatype': 'func',
+     'task': 'restingstate'
+     'desc': 'preproc',
+     'suffix': 'bold',
+     'extension' : 'nii.gz'
+     
+     },
+        'mask': {
+     'datatype': 'func',
+     'task': 'restingstate'
+     'desc': 'brain',
+     'suffix': 'mask',
+     'extension': 'nii.gz'
+     } 
+}
+
+```
+
+The queries defined in this JSON file will filter the  ```bold``` and ```mask``` data according to the defined ```entities```.
+The ```mask``` query will only have an effect when the ```--brainmask``` argument is defined.
+
+rsHRF-BIDS app uses the following queries, by default :
+
+```
+   'bold' : {'datatype':' func', 'suffix': 'bold', 'extension': 'nii.gz', 'desc': 'preproc', 'task': 'rest'}
+   'mask' : {'datatype': 'func', 'suffix': 'mask', 'extension': 'nii.gz', 'desc': 'brain', 'task': 'rest'}
+```
+
+This means that the BIDS-App by default checks for ```bold``` or ```mask``` BIDS-data that has the following entities: 
+
+     bold : sub-<label>/func/sub<label>-task_rest-desc_preproc_bold.nii.gz
+     mask : sub-<label>/func/sub<label>-task_rest-desc_brain_mask.nii.gz
+
+Only modification of these queries will have any effect. You may filter on any entity defined in the PyBIDS [config file ](https://github.com/bids-standard/pybids/blob/master/bids/layout/config/bids.json) and [derivatives file](https://github.com/bids-standard/pybids/blob/master/bids/layout/config/derivatives.json)
+
+
+
+
 ### Example Use-Cases
 ----
 
@@ -115,90 +165,89 @@ In essence, the whole usage of the application can be broken down to 7 major ste
 
 a) Through the Python Package
 
-``rsHRF --ts input.txt --estimation hanning --output_dir results -TR 2.0``
+``rsHRF --ts input_file.txt --estimation hanning --output_dir results -TR 2.0``
 
 b) Through the BIDS-App
 
 ```
 docker run -ti --rm \
--v /path/to/input.txt:/input.txt:ro \
+-v /path/to/input:/input:ro \
 -v /path/to/output/directory/results:/results \
-bids/rshrf --ts input.txt --output_dir results --estimation hanning -TR 2.0
+bids/rshrf --ts /input/input.txt --output_dir results --estimation hanning -TR 2.0
 ```
 
-In the above example, the input file is ``input.txt``. The estimation method passed is `hanning`. The `-TR` argument (which represents the BOLD repetition time) needs to be supplied here.
+In the above example, the input file is a ``.txt`` file ``input_file.txt``. The estimation method passed is `hanning`. The `-TR` argument (which represents the BOLD repetition time) needs to be supplied here.
 
 #### Running the analysis with a single input file (.nii / .nii.gz or .gii / .gii.gz)
 
 a) Through the Python Package
 
-``rsHRF --input_file input.nii --estimation fourier --output_dir results``.
+``rsHRF --input_file input_file --estimation fourier --output_dir results``.
 
 b) Through the BIDS-App
 
 ```
 docker run -ti --rm \
--v /path/to/input.nii:/input.nii:ro \
+-v /path/to/input:/input:ro \
 -v /path/to/output/directory/results:/results \
-bids/rshrf --input_file input.nii  --estimation fourier --output_dir results
+bids/rshrf --input_file /input/input_file  --estimation fourier --output_dir results
 ```
 
-In the above example, the input file is ```input.txt```. The estimation method passed is `fourier`. The `-TR` argument (which represents the BOLD repetition time) needs to be supplied if ```.gii / .gii.gz``` input file is used.
+In the above example, the ```input_file``` can be a ```.nii/.nii.gz or .gii/ gii.gz```  image. The estimation method passed is `fourier`. The `-TR` argument (which represents the BOLD repetition time) needs to be supplied if a ```.gii/.gii.gz``` input file is used.
 
 #### Running the analysis with a single input file and a single mask file.
 
 a) Through the Python Package
 
-``rsHRF --input_file input.nii --atlas mask.nii --estimation canon2dd --output_dir results``.
+``rsHRF --input_file input_file --atlas mask_file --estimation canon2dd --output_dir results``.
 
 b) Through the BIDS-App
 
 ```
 docker run -ti --rm \
--v /path/to/input.nii:/input.nii:ro \
--v /path/to/mask.nii:/mask.nii \
+-v /path/to/input:/input:ro \
+-v /path/to/mask:/mask \
 -v /path/to/output/directory/results:/results \
-bids/rshrf --input_file input.nii --atlas mask.nii --estimation canon2dd --output_dir results
+bids/rshrf --input_file /input/input_file --atlas /mask/mask_file --estimation canon2dd --output_dir results
 ```
 
-In the above example, the input file is ``input.nii``. The ``output_dir`` is ``results``
-directory. The corresponding mask file supplied is ``mask.nii``.
-The estimation method passed is ``canon2dd``. The analysis level is not to be supplied here. The `-TR` argument (which represents the BOLD repetition time) needs to be supplied if ```.gii / .gii.gz``` input file is used.
+In the above example, the ```input_file``` can be a ```.nii/.nii.gz or .gii/ gii.gz```  image. The ``output_dir`` is the ``results``
+directory. The corresponding mask is the ``mask_file`` that should have a matching extension (``.nii/.nii.gz or .gii/gii.gz``) with the ``input_file``. The estimation method passed is ``canon2dd``. The analysis level is not to be supplied here. The `-TR` argument (which represents the BOLD repetition time) needs to be supplied if ```.gii / .gii.gz``` input file is used.
 
 #### Running the analysis with a BIDS formatted data-set and a common mask file to be used for all the input files present in the data-set.
 
-Note: All input files in the BIDS directory need to be of the type ``*_preproc.nii`` or 
-``*_preproc.nii.gz``. Also, they must be present in the ``func`` directory under their
+Note: By default all input files in the BIDS directory need to be of the type ``*_bold.nii`` or 
+``*_bold.nii.gz``. Also, they must be present in the ``func`` directory under their
 respective subject / session folder.
 
 a) Through the Python Package
 
-``rsHRF --bids_dir input_dir --output_dir results --analysis_level participant --atlas mask.nii --estimation sFIR``
+``rsHRF --bids_dir input_dir --output_dir results --analysis_level participant --atlas mask_file --estimation sFIR``
 
 b) Through the BIDS-App
 
 ```
 docker run -ti --rm \
 -v /path/to/bids_dir:/input_dir:ro \
--v /path/to/mask.nii:/mask.nii \
+-v /path/to/mask:/mask \
 -v /path/to/output/directory/results:/results \
-bids/rshrf --bids_dir input_dir --output_dir results --analysis_level participant --atlas mask.nii --estimation sFIR
+bids/rshrf --bids_dir input_dir --output_dir results --analysis_level participant --atlas mask/mask_file  --estimation sFIR
 ```
 
 In the above example, the ``output_dir`` is ``results`` directory. The 
-corresponding mask file supplied is ``mask.nii``. The BIDS formatted data-set
-lies in the ``input_dir`` directory. The analysis level is ``participant``. The analysis will be performed for all subjects since no specific subjects are mentioned using ``--analysis_level participant``.
+corresponding mask supplied is ``mask_file`` which should have the same extension as input files from the BIDS formatted data-set (``.nii/.nii.gz``). The BIDS formatted data-set
+lies in the ``input_dir`` directory. The analysis level is ``participant``. The analysis will be performed for all subjects since no specific subjects are mentioned using ``--participant_label``.
 
 #### Running the analysis with a BIDS formatted data-set that also includes a unique mask file for each of the input file present. 
 
-Note: All input files in the BIDs directory need to be of the type ``*_preproc.nii`` or 
-``*_preproc.nii.gz``. The corresponding mask files in the BIDs directory need to
-be of the type ``*_brainmask.nii`` or ``*_brainmask.nii.gz``. Also, they must be 
+Note: By default all input files in the BIDs directory need to have the suffix of the type ``*_bold.nii`` or 
+``*_bold.nii.gz``. The corresponding mask files in the BIDs directory need to
+be of the type ``*_mask.nii`` or ``*_mask.nii.gz``. Also, they must be 
 present in the ``func`` directory under their respective subject / session folder.
 Furthermore, two corresponding input and mask files need to have the same prefix.
-
-For example, 2 corresponding input and mask files can be ``input_preproc.nii`` and
-``input_brainmask.nii``. These 2 will then be paired up for analysis.
+ 
+For example, 2 corresponding input and mask files according to BIDS format can be ``input_bold.nii`` and
+``input_mask.nii``. These 2 will then be paired up for analysis.
 
 a) Through the Python Package
 
@@ -210,12 +259,40 @@ b) Through the BIDS-App
 docker run -ti --rm \
 -v /path/to/bids_dir:/input_dir:ro \
 -v /path/to/output/directory/results:/results \
-bids/rshrf input_dir results participant --brainmask --estimation canon2dd --participant_label 001 002
+bids/rshrf --bids_dir input_dir --output_dir results --analysis_level participant --brainmask --estimation canon2dd --participant_label 001 002
 ```
 
 In the above example, the output directory is ``results`` directory. The BIDS formatted data-set
 lies in the ``input_dir`` directory. The associated mask files also lie within the BIDS dataset.
 The analysis level is ``participant``. The analysis is performed only for ``sub-001`` & ``sub-002``
 out of all the available subjects in the BIDS dataset.
+
+
+#### Running the analysis using BIDS-filter to input certain files to BIDS-App. 
+
+a) Through the Python Package
+
+``rsHRF --bids_dir input_dir --output_dir results --analysis_level participant --bids_filter_file bids_filter_file.json --brainmask --estimation canon2dd --participant_label 001 002``.
+
+b) Through the BIDS-App
+
+```
+docker run -ti --rm \
+-v /path/to/bids_dir:/input_dir:ro \
+-v /path/to/output/directory/results:/results \
+-v /path/to/bids_filter/:/filter \
+bids/rshrf --bids_dir input_dir --output_dir results --analysis_level participant --bids_filter_file /filter/bids_filter_file.json --brainmask --estimation canon2dd --participant_label 001 002
+```
+
+In the above example, the output directory is ``results`` directory. The BIDS formatted data-set
+lies in the ``input_dir`` directory. The associated mask files also lie within the BIDS dataset.
+The analysis level is ``participant``. A custom ``bids_filter_file.json`` to filter the BIDS-data input to the BIDS-App. The analysis is performed only for ``sub-001`` & ``sub-002``
+out of all the available subjects in the BIDS dataset.
+
+
+
+
+
+
 
 ### Fin.
