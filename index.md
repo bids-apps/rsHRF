@@ -148,7 +148,13 @@ rsHRF-BIDS app uses the following queries, by default :
    'mask' : {'datatype': 'func', 'suffix': 'mask', 'extension': 'nii.gz', 'desc': 'brain', 'task': 'rest'}
 ```
 
+This means that the BIDS-App by default checks for ```bold``` or ```mask``` BIDS-data that has the following entities: 
+
+     bold : sub-<label>/func/sub<label>-task_rest-desc_preproc_bold.nii.gz
+     mask : sub-<label>/func/sub<label>-task_rest-desc_brain_mask.nii.gz
+
 Only modification of these queries will have any effect. You may filter on any entity defined in the PyBIDS [config file ](https://github.com/bids-standard/pybids/blob/master/bids/layout/config/bids.json) and [derivatives file](https://github.com/bids-standard/pybids/blob/master/bids/layout/config/derivatives.json)
+
 
 
 
@@ -262,7 +268,7 @@ The analysis level is ``participant``. The analysis is performed only for ``sub-
 out of all the available subjects in the BIDS dataset.
 
 
-#### Running the analysis using BIDS-filter to input certain files to rsHRF. 
+#### Running the analysis using BIDS-filter to input certain files to BIDS-App. 
 
 a) Through the Python Package
 
@@ -280,7 +286,7 @@ bids/rshrf --bids_dir input_dir --output_dir results --analysis_level participan
 
 In the above example, the output directory is ``results`` directory. The BIDS formatted data-set
 lies in the ``input_dir`` directory. The associated mask files also lie within the BIDS dataset.
-The analysis level is ``participant``. A custom ``bids_filter_file.json`` to filter the BIDS-data input to the rsHRF app. The analysis is performed only for ``sub-001`` & ``sub-002``
+The analysis level is ``participant``. A custom ``bids_filter_file.json`` to filter the BIDS-data input to the BIDS-App. The analysis is performed only for ``sub-001`` & ``sub-002``
 out of all the available subjects in the BIDS dataset.
 
 
