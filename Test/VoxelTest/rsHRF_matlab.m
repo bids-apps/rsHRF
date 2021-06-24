@@ -17,7 +17,7 @@ BF = {'Canonical HRF (with time derivative)'
 'sFIR'};
 
 parameters = load('./parameters.dat');           % loading the parameters from file
-para.order       = parameters(3);                % for Gamma functions or Fourier set
+para.order       = parameters(2);                % for Gamma functions or Fourier set
 temporal_mask    = [];                           % without mask, it means temporal_mask = ones(nobs,1); i.e. all time points included. nobs: number of observation = size(data,1). if want to exclude the first 1~5 time points, let temporal_mask(1:5)=0;
 para.TR          = parameters(3);                % BOLD repetition time
 para.passband    =[parameters(4) parameters(5)]; %bandpass filter lower and upper bound
