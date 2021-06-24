@@ -37,7 +37,7 @@ else:
 if para['T']  == 1:
     para['T0'] = 1
 
-voxel_id = int(parameterFile[12])
+voxel_id = int(parameterFile[12]) 
 
 # looping over all the estimation rules
 for i in range(0, 7):
@@ -56,6 +56,7 @@ for i in range(0, 7):
     file_type  = ".nii"
     mode       = "file"
     name       = input_file.split('/')[-1].split('.')[0]
+
     v          = spm_dep.spm.spm_vol(mask_file)
     v1         = spm_dep.spm.spm_vol(input_file)
     brain      = spm_dep.spm.spm_read_vols(v)
@@ -63,14 +64,13 @@ for i in range(0, 7):
     data       = v1.get_data()
     nobs       = data.shape[3]
     data1      = np.reshape(data, (-1, nobs), order='F').T
-    bold_sig   = stats.zscore(data1[:, voxel_ind], ddof=1)
-    mask       = v.get_data()
-    bold_sig   = np.nan_to_num(bold_sig)
+    data1      = data1[:, voxel_ind]
+    data1      = data1[:, voxel_id]
+    bold_sig   = np.expand_dims(data1, axis=1)
+    bold_sig   = stats.zscore(bold_sig, ddof=1)
     bold_sig   = processing. \
         rest_filter. \
         rest_IdealFilter(bold_sig, para['TR'], para['passband'])
-    bold_sig   = bold_sig[:,voxel_id]
-    bold_sig   = np.expand_dims(bold_sig, axis=1)
     start_time = time.time()
     if not (para['estimation'] == 'sFIR' or para['estimation'] == 'FIR'):
         bf = basis_functions.basis_functions.get_basis_function(bold_sig.shape, para)

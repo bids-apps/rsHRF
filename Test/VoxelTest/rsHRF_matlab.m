@@ -63,14 +63,16 @@ bold_sig = bold_sig_arr(voxel_id,:);
 bold_sig = bold_sig';
 nobs     = size(bold_sig,1);
 bold_sig = zscore(bold_sig);
+
 bold_sig = rsHRF_band_filter(bold_sig, para.TR, para.passband);
 
 if counter < 6       % for temporal basis sets
     [beta_hrf, bf, event_bold] = rsHRF_estimation_temporal_basis(bold_sig,para,temporal_mask);
     hrfa = bf*beta_hrf(1:size(bf,2),:);
-elseif counter >= 6 % fir FIR and sFIR
+elseif counter >= 6 % for FIR and sFIR
     [hrfa,event_bold] = rsHRF_estimation_FIR(bold_sig,para,temporal_mask);
 end
+
 
 toc
 
