@@ -1,78 +1,34 @@
 import numpy as np
+import numpy.matlib
 import warnings
 
 warnings.filterwarnings("ignore")
 
-def nextpow2(n):
-    return np.ceil(np.log2(np.abs(n))).astype('long')
-
-
-def rest_nextpow2_one35(n):
-    if type(n) is np.ndarray:
-        if(np.amax(n.shape)) > 1:
-            n = np.amax(n.shape)
-    if n < 16:
-        Result = 2 ** nextpow2(n)
-        return Result
-    limit = nextpow2(n)
-    tbl = np.arange((2 ** (limit - 1)), ((2 ** limit) + 1))
-    tbl = np.extract(tbl >= n, tbl)
-    for x in range(0, np.amax(tbl.shape)):
-        Result = tbl[x]
-        f, p = np.frexp(Result)
-        if f.size != 0 and f == 0.5:
-            return Result
-        if np.remainder(Result, 3 * 5) == 0:
-            y = Result / (3 * 5)
-            f, p = np.frexp(y)
-            if f.size != 0 and f == 0.5:
-                return Result
-        if np.remainder(Result, 3) == 0:
-            y = Result / 3
-            f, p = np.frexp(y)
-            if f.size != 0 and f == 0.5:
-                return Result
-        if np.remainder(Result, 5) == 0:
-            y = Result / 5
-            f, p = np.frexp(y)
-            if f.size != 0 and f == 0.5:
-                return Result
-    Result = np.nan
-    return Result
-
-
-def rest_IdealFilter(Data, SamplePeriod, Band):
-    sampleFreq = 1 / SamplePeriod
-    sampleLength = Data.shape[0]
-    paddedLength = rest_nextpow2_one35(sampleLength)
-    LowCutoff_HighPass = Band[0]
-    HighCutoff_LowPass = Band[1]
-    if (LowCutoff_HighPass >= sampleFreq / 2):
-        idxLowCutoff_HighPass = int(paddedLength / 2 + 1)
-    else:
-        idxLowCutoff_HighPass = int(
-            np.ceil(LowCutoff_HighPass * paddedLength * SamplePeriod + 1)
-        )
-
-    if (HighCutoff_LowPass >= sampleFreq / 2) or (HighCutoff_LowPass == 0):
-        idxHighCutoff_LowPass = int(paddedLength / 2 + 1)
-    else:
-        idxHighCutoff_LowPass = int(
-            np.fix(HighCutoff_LowPass * paddedLength * SamplePeriod + 1)
-        )
-
-    FrequencyMask = np.zeros((paddedLength, 1))
-    FrequencyMask[idxLowCutoff_HighPass - 1:idxHighCutoff_LowPass, 0] = 1
-    FrequencyMask[paddedLength - idxLowCutoff_HighPass + 1:
-                  paddedLength - idxHighCutoff_LowPass:-1, 0] = 1
-    FrequencySetZero_Index = np.nonzero(FrequencyMask == 0)
-
-    Data = Data - np.tile(np.mean(Data, axis=0), (Data.shape[0], 1))
-    Data = np.concatenate(
-        (Data, np.zeros((paddedLength - sampleLength, Data.shape[1]))), axis=0
-    )
-    Data = np.fft.fft(Data, axis=0)
-    Data[FrequencySetZero_Index, :] = 0
-    Data = np.fft.ifft(Data, axis=0)
-    Data_Filtered = Data[0:sampleLength, :]
-    return Data_Filtered
+def rest_IdealFilter(x, TR, Bands, m=5000):
+    nvar = x.shape[1]
+    nbin = int(np.ceil(nvar/m))
+    for i in range(1, nbin + 1):
+        if i != nbin:
+            ind_X = [j for j in range((i-1)*m, i*m)]
+        else:
+            ind_X = [j for j in range((i-1)*m, nvar)]
+        x1 = x[:, ind_X]
+        x1 = conn_filter(TR,Bands,x1) + np.matlib.repmat(np.mean(x1), x1.shape[0], 1)
+        x[:,ind_X] = x1
+        return x
+        
+def conn_filter(rt, filter, x):
+    Nx = x.shape[0]
+    fy = np.fft.fft(np.concatenate((x, np.flipud(x)), axis=0), axis=0)
+    f = np.arange(fy.shape[0])
+    f = f.reshape(1, -1)
+    f = np.min((f, fy.shape[0]-f), axis=0)
+    low = filter[0]*(rt*fy.shape[0])
+    high = filter[1]*(rt*fy.shape[0])
+    idx_low = np.argwhere(np.any(f < low, axis=0))
+    idx_high = np.argwhere(np.any(f >= high, axis=0))
+    idx = np.concatenate((idx_low, idx_high)).reshape(-1)
+    fy[idx,:] = 0.
+    y = np.real(np.fft.ifft(fy, axis=0))
+    y = y[0:Nx,:]
+    return y
