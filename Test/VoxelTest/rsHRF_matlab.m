@@ -70,7 +70,8 @@ if counter < 6       % for temporal basis sets
     [beta_hrf, bf, event_bold] = rsHRF_estimation_temporal_basis(bold_sig,para,temporal_mask);
     hrfa = bf*beta_hrf(1:size(bf,2),:);
 elseif counter >= 6 % for FIR and sFIR
-    [hrfa,event_bold] = rsHRF_estimation_FIR(bold_sig,para,temporal_mask);
+    [beta_hrf,event_bold] = rsHRF_estimation_FIR(bold_sig,para,temporal_mask);
+    hrfa = beta_hrf(1:end-2,:);
 end
 
 
