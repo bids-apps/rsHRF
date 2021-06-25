@@ -8,6 +8,11 @@ from rsHRF import spm_dep, processing, utils, basis_functions
 import warnings
 warnings.filterwarnings("ignore")
 
+# Create outputfolder
+output_folder = os.getcwd() + '/Data'
+if not os.path.isdir(output_folder):
+    os.mkdir(output_folder)
+
 # all the different estimation rules
 BF =   ['canon2dd', 'canon2dd', 'gamma', 'fourier', 'fourier w hanning', 'FIR', 'sFIR']
 Name = ['Canonical HRF (with time derivative)', 'Canonical HRF (with time and dispersion derivatives)', \
@@ -51,8 +56,8 @@ for i in range(0, 7):
     else:
         para['thr']   = [int(parameterFile[10])]
     path = '/home/redhood/Desktop/Work/GSoC-2020/rsHRF/Test/NITRC-multi-file-downloads/sub-10171/func/' # path to input directory
-    input_file = path + 'sub-10171_bold_space-T1w_preproc_bold.nii'
-    mask_file  = path + 'sub-10171_bold_space-T1w_brainmask.nii'
+    input_file = path + 'sub-10171_task-rest_bold_space-T1w_preproc.nii'
+    mask_file  = path + 'sub-10171_task-rest_bold_space-T1w_brainmask.nii'
     file_type  = ".nii"
     mode       = "file"
     name       = input_file.split('/')[-1].split('.')[0]

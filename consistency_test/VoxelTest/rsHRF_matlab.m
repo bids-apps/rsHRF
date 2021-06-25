@@ -7,6 +7,12 @@ addpath /home/redhood/Desktop/Work/GSoC-2020/rsHRF-Toolbox/rsHRF/Test/VoxelTest 
 addpath /home/redhood/Desktop/Work/GSoC-2020/rsHRF-master           % add the path to rsHRF-master directory
 addpath /home/redhood/Desktop/Work/GSoC-2020/rsHRF-Toolbox/demo_codes % add the path to rsHRF-master/demo_code
 savepath 
+
+% Create output folder
+if ~exist('./Data','dir')
+    mkdir('./Data')
+end
+
 % all the estimation rules
 BF = {'Canonical HRF (with time derivative)'
 'Canonical HRF (with time and dispersion derivatives)'            
@@ -17,7 +23,7 @@ BF = {'Canonical HRF (with time derivative)'
 'sFIR'};
 
 parameters = load('./parameters.dat');           % loading the parameters from file
-para.order       = parameters(3);                % for Gamma functions or Fourier set
+para.order       = parameters(2);                % for Gamma functions or Fourier set
 temporal_mask    = [];                           % without mask, it means temporal_mask = ones(nobs,1); i.e. all time points included. nobs: number of observation = size(data,1). if want to exclude the first 1~5 time points, let temporal_mask(1:5)=0;
 para.TR          = parameters(3);                % BOLD repetition time
 para.passband    =[parameters(4) parameters(5)]; %bandpass filter lower and upper bound
@@ -43,16 +49,16 @@ para.estimation = para.name;
 %%===================================
 
 %%===========fMRI Data===============
-path            = '/home/redhood/Desktop/Work/GSoC-2020/rsHRF/Test/NITRC-multi-file-downloads/sub-10171/func/'; % input directory 
-inputFilePath   = strcat(path,'sub-10171_bold_space-T1w_preproc_bold.nii');
-maskFilePath    = strcat(path,'sub-10171_bold_space-T1w_brainmask.nii');
+%path            = '/home/redhood/Desktop/Work/GSoC-2020/rsHRF/Test/NITRC-multi-file-downloads/sub-10171/func/'; % input directory 
+inputFilePath   = strcat(path,'sub-10171_task-rest_bold_space-T1w_preproc.nii');
+maskFilePath    = strcat(path,'sub-10171_task-rest_bold_space-T1w_brainmask.nii');
 
-v = niftiread(inputFilePath);
-v0 = niftiread(maskFilePath);
+v = spm_read_vols(spm_vol((inputFilePath)));
+v0 = spm_read_vols(spm_vol((maskFilePath)));
 dim = size(v);
-length = dim(4);
+ntime = dim(4);
 voxels = dim(1)*dim(2)*dim(3);
-v = reshape(v,voxels,length);
+v = reshape(v,voxels,ntime);
 v0 = reshape(v0,voxels,1);
 ind = find(v0>0);
 bold_sig_arr = double(v(ind,:));
@@ -70,7 +76,8 @@ if counter < 6       % for temporal basis sets
     [beta_hrf, bf, event_bold] = rsHRF_estimation_temporal_basis(bold_sig,para,temporal_mask);
     hrfa = bf*beta_hrf(1:size(bf,2),:);
 elseif counter >= 6 % for FIR and sFIR
-    [hrfa,event_bold] = rsHRF_estimation_FIR(bold_sig,para,temporal_mask);
+    [beta_hrf,event_bold] = rsHRF_estimation_FIR(bold_sig,para,temporal_mask);
+    hrfa = beta_hrf(1:end-2,:);
 end
 
 
