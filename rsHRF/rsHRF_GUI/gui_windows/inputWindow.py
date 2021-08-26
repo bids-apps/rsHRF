@@ -36,7 +36,8 @@ class InputWindow():
                 self.input_file = filedialog.askopenfilename(initialdir=os.getcwd(), title="Input File Path", filetypes=(("nifti files", "*.nii"), ("nifti files", "*.nii.gz"), ("gifti files", "*.gii"), ("gifti files", "*.gii.gz")))
                 maskFormat.configure(state=DISABLED)
                 try:
-                    self.file_type = os.path.splitext(self.input_file)[1]
+                    self.file_type = self.input_file.split(os.extsep,1)[-1]
+                    self.file_type = '.' + self.file_type
                 except: 
                     self.file_type = ()             
             try: 
