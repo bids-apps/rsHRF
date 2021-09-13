@@ -1,3 +1,7 @@
+# rsHRF 1.5.8
+## 12th September, 2021
+* `[Fixed]` Fixed bugs for rest_filter (was only estimating the first 5000 voxels.)
+
 # rsHRF 1.4.4
 ## 19th february, 2021
 *  `[Changed]` Default `para['T0']` value to 1 instead of 3.

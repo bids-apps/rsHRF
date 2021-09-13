@@ -15,7 +15,7 @@ def rest_IdealFilter(x, TR, Bands, m=5000):
         x1 = x[:, ind_X]
         x1 = conn_filter(TR,Bands,x1) + np.matlib.repmat(np.mean(x1), x1.shape[0], 1)
         x[:,ind_X] = x1
-        return x
+    return x
         
 def conn_filter(rt, filter, x):
     Nx = x.shape[0]
