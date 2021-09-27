@@ -20,7 +20,7 @@ def write_derivative_description(bids_dir, deriv_dir):
             'CodeURL': DOWNLOAD_URL,
         }],
         'HowToAcknowledge':
-            'Please cite our paper (under review). '
+            'Please cite our paper : https://doi.org/10.1016/j.neuroimage.2021.118591 '
             ,
     }
 
