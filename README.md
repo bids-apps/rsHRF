@@ -11,7 +11,7 @@ The basic idea
 -------------
 
 This toolbox is aimed to retrieve the onsets of pseudo-events triggering an hemodynamic response from resting state fMRI BOLD voxel-wise signal.
-It is based on point process theory, and fits a model to retrieve the optimal lag between the events and the HRF onset, as well as the HRF shape, using either the canonical shape with two derivatives, or a (smoothed) Finite Impulse Response.
+It is based on point process theory, and fits a model to retrieve the optimal lag between the events and the HRF onset, as well as the HRF shape, using a choice of basis functions (the canonical shape with two derivatives, (smoothed) Finite Impulse Response, mixture of gammas).
 
 ![BOLD HRF](http://users.ugent.be/~dmarinaz/example_hrf.png)
 
