@@ -63,21 +63,27 @@ jobs:
             tar -xz -C /tmp -f /tmp/docker-$VER.tgz
             sudo mv /tmp/docker/* /usr/bin
       - run:
-          name: Build and push Docker image
+          name: Build Docker image
           command: |
-            docker login -u $DOCKER_USER -p $DOCKER_PASS
-            docker build -t bids/rshrf:latest -t bids/rshrf:$CIRCLE_TAG .
-            docker push bids/rshrf:latest
-            docker push bids/rshrf:$CIRCLE_TAG
+            docker build -t "bids/${CIRCLE_PROJECT_REPONAME,,}" .
+      - run:
+          name: push to dockerhub
+          command: |
+            wget https://raw.githubusercontent.com/bids-apps/maintenance-tools/main/circleci/push_docker.sh
+            bash push_docker.sh
 
 workflows:
   version: 2
   build_and_deploy:
     jobs:
       - build:
+          context:
+          - dockerhub
           filters:
             tags:
               only: /[0-9]+(\.[0-9]+)*/
             branches:
               only:
                 -master
+
+# VS Code Extension Version: 1.5.1
