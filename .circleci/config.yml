@@ -1,6 +1,28 @@
-version: 2
+version: 2.1
 jobs:
   build:
+    machine:
+      image: ubuntu-2204:2022.10.2
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - my_cache
+      - run:
+          name: Build Docker image
+          command: |
+            wget https://raw.githubusercontent.com/bids-apps/maintenance-tools/main/circleci/build_docker.sh
+            bash build_docker.sh
+      - save_cache:
+          key: my_cache
+          paths:
+            - ~/docker
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - docker/image.tar
+
+  test:
     docker:
       - image: circleci/python:3.9
     steps:
@@ -30,7 +52,7 @@ jobs:
             python3 setup.py bdist_wheel
       - run:
           name: run unit tests
-          command: | 
+          command: |
             python3 -m venv venv
             . venv/bin/activate
             pip3 install -r requirements.txt
@@ -39,10 +61,10 @@ jobs:
           name: upload to pypi
           command: |
             . venv/bin/activate
-            twine upload dist/* 
+            twine upload dist/*
       - run:
           name: run integration test
-          command: | 
+          command: |
             python3 -m venv venv
             . venv/bin/activate
             pip3 install rshrf
@@ -62,10 +84,14 @@ jobs:
             curl -L -o /tmp/docker-$VER.tgz https://get.docker.com/builds/Linux/x86_64/docker-$VER.tgz
             tar -xz -C /tmp -f /tmp/docker-$VER.tgz
             sudo mv /tmp/docker/* /usr/bin
-      - run:
-          name: Build Docker image
-          command: |
-            docker build -t "bids/${CIRCLE_PROJECT_REPONAME,,}" .
+
+  deploy:
+    machine:
+      image: ubuntu-2204:2022.10.2
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run: docker load -i /tmp/workspace/docker/image.tar
       - run:
           name: push to dockerhub
           command: |
@@ -73,17 +99,17 @@ jobs:
             bash push_docker.sh
 
 workflows:
-  version: 2
   build_and_deploy:
     jobs:
-      - build:
+      - build
+      - test
+      - deploy:
           context:
-          - dockerhub
-          filters:
-            tags:
-              only: /[0-9]+(\.[0-9]+)*/
-            branches:
-              only:
-                -master
-
+            - dockerhub
+      - deploy:
+          context:
+            - dockerhub
+          requires:
+            - test
+            - build
 # VS Code Extension Version: 1.5.1
