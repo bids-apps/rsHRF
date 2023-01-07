@@ -1,28 +1,37 @@
 version: 2.1
 jobs:
-  build:
-    machine:
-      image: ubuntu-2204:2022.10.2
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - my_cache
-      - run:
-          name: Build Docker image
-          command: |
-            wget https://raw.githubusercontent.com/bids-apps/maintenance-tools/main/circleci/build_docker.sh
-            bash build_docker.sh
-      - save_cache:
-          key: my_cache
-          paths:
-            - ~/docker
-      - persist_to_workspace:
-          root: /home/circleci
-          paths:
-            - docker/image.tar
 
   test:
+    docker:
+      - image: circleci/python:3.9
+    steps:
+      - checkout
+      - run:
+          name: run unit tests
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip3 install -r requirements.txt
+            pytest rsHRF/unit_tests/ -p no:warnings
+      - run:
+          name: run integration test
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip3 install rshrf
+            mkdir ${HOME}/scratch 
+            mkdir ${HOME}/scratch/downloads
+            wget -c -P ${HOME}/scratch/downloads/ "https://osf.io/xv72t//download"
+            tar xf ${HOME}/scratch/downloads/download -C ${HOME}/scratch
+            rsHRF --bids_dir ${HOME}/scratch/ds002790/derivatives/fmriprep/ \
+              --output_dir ${HOME}/scratch/ds002790 \
+              --participant_label 0001 \
+              --brainmask \
+              --estimation canon2dd \
+              --analysis_level participant
+          no_output_timeout: 6h
+
+  deploy_pypi:
     docker:
       - image: circleci/python:3.9
     steps:
@@ -51,41 +60,34 @@ jobs:
             python3 setup.py sdist
             python3 setup.py bdist_wheel
       - run:
-          name: run unit tests
-          command: |
-            python3 -m venv venv
-            . venv/bin/activate
-            pip3 install -r requirements.txt
-            pytest rsHRF/unit_tests/ -p no:warnings
-      - run:
           name: upload to pypi
           command: |
             . venv/bin/activate
             twine upload dist/*
-      - run:
-          name: run integration test
-          command: |
-            python3 -m venv venv
-            . venv/bin/activate
-            pip3 install rshrf
-            mkdir ${HOME}/scratch 
-            mkdir ${HOME}/scratch/downloads
-            wget -c -P ${HOME}/scratch/downloads/ "https://osf.io/xv72t//download"
-            tar xf ${HOME}/scratch/downloads/download -C ${HOME}/scratch
-            rsHRF --bids_dir ${HOME}/scratch/ds002790/derivatives/fmriprep/ --output_dir ${HOME}/scratch/ds002790 --participant_label 0001 --brainmask --estimation canon2dd --analysis_level participant
-          no_output_timeout: 6h
-      - setup_remote_docker:
-          docker_layer_caching: false
-      - run:
-          name: Install Docker client
-          command: |
-            set -x
-            VER="17.03.0-ce"
-            curl -L -o /tmp/docker-$VER.tgz https://get.docker.com/builds/Linux/x86_64/docker-$VER.tgz
-            tar -xz -C /tmp -f /tmp/docker-$VER.tgz
-            sudo mv /tmp/docker/* /usr/bin
 
-  deploy:
+  docker_build:
+    machine:
+      image: ubuntu-2204:2022.10.2
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - my_cache
+      - run:
+          name: Build Docker image
+          command: |
+            wget https://raw.githubusercontent.com/bids-apps/maintenance-tools/main/circleci/build_docker.sh
+            bash build_docker.sh
+      - save_cache:
+          key: my_cache
+          paths:
+            - ~/docker
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - docker/image.tar
+
+  deploy_dockerhub:
     machine:
       image: ubuntu-2204:2022.10.2
     steps:
@@ -101,12 +103,19 @@ jobs:
 workflows:
   build_and_deploy:
     jobs:
-      - build
       - test
-      - deploy:
+      - deploy_pypi:
+          requires:
+            - test
+          filters:
+            tags:
+              only: /.*/
+      - docker_build:
+          requires:
+            - deploy_pypi # docker images pulls rsHRF from pypi
+      - deploy_dockerhub:
           context:
             - dockerhub
           requires:
-            - test
-            - build
-# VS Code Extension Version: 1.5.1
+            - docker_build
+

@@ -11,13 +11,13 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 class VerifyVersionCommand(install):
-    """Custom command to verify that the git tag matches our version"""
+    """Custom command to verify that the git tag matches our version when releasing to a tag."""
     description = 'verify that the git tag matches our version'
 
     def run(self):
         tag = os.getenv('CIRCLE_TAG')
 
-        if tag != VERSION:
+        if tag is not None and tag != VERSION:
             info = "Git tag: {0} does not match the version of this app: {1}".format(
                 tag, VERSION
             )
