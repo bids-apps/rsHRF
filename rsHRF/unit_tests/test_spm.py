@@ -19,7 +19,7 @@ def get_data(image_type):
     if image_type == 'nifti':
         data = nib.Nifti1Image(data, np.eye(4))
     else:
-        data = nib.gifti.GiftiDataArray(data)
+        data = nib.gifti.GiftiDataArray(data.astype(np.float32), datatype='float32')
     return data
 
 def test_spm_vol():
@@ -39,7 +39,7 @@ def test_spm_vol():
             if 'nii' in test_file:
                 assert type(v) == type(nib.Nifti1Image(np.asarray([]), np.eye(4)))
             elif 'gii' in test_file:
-                assert type(v) == type(nib.gifti.GiftiDataArray(np.asarray([])))
+                assert isinstance(v, nib.gifti.GiftiDataArray)
 
 def test_spm_read_vols():
     nifti = get_data('nifti')
@@ -87,7 +87,7 @@ def test_spm_write_vol():
             elif 'gii' in test_file:
                 load_mock.return_value = get_data('gifti')
             v1 = spm.spm_vol(test_file)
-            mask_data = np.zeros(SHAPE[:-1]).flatten(order='F')
+            mask_data = np.zeros(SHAPE[:-1]).flatten(order='F').astype(np.float32)
             fname = test_file.split('.')[0]
             file_type = '.' + test_file.split('.', 1)[1]
             spm.spm_write_vol(v1, mask_data, fname, file_type)

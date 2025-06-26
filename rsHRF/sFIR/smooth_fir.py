@@ -52,7 +52,7 @@ def wgr_glsco(X, Y, sMRI = [], AR_lag=0, max_iter=20):
     Beta = estimator corresponding to the k regressors
     """
     nobs, nvar = X.shape
-    if sMRI == []:
+    if isinstance(sMRI, list) and len(sMRI) == 0:
         Beta = wgr_regress(Y,X)
     else:
         sMRI = np.array(sMRI)
@@ -78,7 +78,7 @@ def wgr_glsco(X, Y, sMRI = [], AR_lag=0, max_iter=20):
             X_main = \
                 X_main - (AR_para[m] * (X[AR_lag - m - 1:nobs - m - 1, :]))
             Y_main = Y_main - (AR_para[m] * (Y[AR_lag - m - 1:nobs - m - 1]))
-        if sMRI == []:
+        if isinstance(sMRI, list) and len(sMRI) == 0:
             Beta = wgr_regress(Y_main, X_main)
         else:
             try:

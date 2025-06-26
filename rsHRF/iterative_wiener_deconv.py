@@ -1,4 +1,4 @@
-import pyyawt
+import pywt
 import numpy as np 
 from   rsHRF.processing import knee 
 
@@ -8,8 +8,17 @@ def rsHRF_iterative_wiener_deconv(y, h, Iterations=1000):
     h            = np.append(h, np.zeros((N - nh, 1)))
     H            = np.fft.fft(h, axis=0)
     Y            = np.fft.fft(y, axis=0)
-    [c ,l]       = pyyawt.wavedec(abs(y), 1, 'db2')
-    sigma        = pyyawt.wnoisest(c, l, 1)
+    
+    # Replace pyyawt.wavedec with pywt.wavedec
+    coeffs       = pywt.wavedec(abs(y), 'db2', level=1)
+    
+    # Replace pyyawt.wnoisest with custom noise estimation using MAD
+    # Extract detail coefficients (last element in coeffs list)
+    detail_coeffs = coeffs[-1]
+    # Estimate noise using MAD (Median Absolute Deviation) method
+    # sigma = MAD / 0.6745, where 0.6745 is the 0.75 quantile of standard normal distribution
+    sigma        = np.median(np.abs(detail_coeffs)) / 0.6745
+    
     Phh          = np.square(abs(H))
     sqrdtempnorm = ((((np.linalg.norm(y-np.mean(y), 2)**2) - (N-1)*(sigma**2)))/(np.linalg.norm(h,1))**2)
     Nf           = (sigma**2)*N
@@ -31,6 +40,11 @@ def rsHRF_iterative_wiener_deconv(y, h, Iterations=1000):
         id0 = idm 
     else:
         id0 = idx 
-    Pxx             = Sf[:,id0+1]
+    
+    # Add bounds checking to prevent index out of bounds error
+    max_idx = Sf.shape[1] - 1  # Maximum valid column index
+    selected_idx = min(id0 + 1, max_idx)  # Ensure we don't exceed bounds
+    
+    Pxx             = Sf[:,selected_idx]
     WienerFilterEst = np.divide(np.multiply(np.conj(H), Pxx), np.add(np.multiply(np.square(abs(H)), Pxx), Nf))
     return np.real(np.fft.ifft(np.multiply(WienerFilterEst, Y)))
