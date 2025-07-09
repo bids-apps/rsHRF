@@ -8,4 +8,4 @@ pandas
 patsy
 mpld3
 joblib
-pyyawt
+PyWavelets
