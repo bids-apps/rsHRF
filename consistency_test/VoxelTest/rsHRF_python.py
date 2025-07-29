@@ -66,7 +66,7 @@ for i in range(0, 7):
     v1         = spm_dep.spm.spm_vol(input_file)
     brain      = spm_dep.spm.spm_read_vols(v)
     voxel_ind  = np.where(brain > 0)[0]
-    data       = v1.get_data()
+    data       = v1.get_fdata()
     nobs       = data.shape[3]
     data1      = np.reshape(data, (-1, nobs), order='F').T
     data1      = data1[:, voxel_ind]
