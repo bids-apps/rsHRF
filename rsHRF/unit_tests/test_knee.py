@@ -6,8 +6,8 @@ def test_knee_pt():
     size = np.random.randint(10, 99)
     y = np.random.random(size) + np.random.random(size) * 1j
     out1, out2 = knee.knee_pt(y)
-    assert type(out1) == np.int_
-    assert type(out2) == np.int_
+    assert isinstance(out1, (int, np.integer)), f"Expected integer type, got {type(out1)}"
+    assert isinstance(out2, (int, np.integer)), f"Expected integer type, got {type(out2)}"
     y = np.zeros(size) + np.zeros(size) * 1j
     out1, out2 = knee.knee_pt(y)
     assert out1 == 2

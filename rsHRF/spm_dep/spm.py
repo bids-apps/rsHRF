@@ -18,7 +18,7 @@ def spm_read_vols(mapped_image_volume):
     """
     Read in entire image volumes
     """
-    data = mapped_image_volume.get_data()
+    data = mapped_image_volume.get_fdata()
     data = data.flatten(order='F')
     return data
 
@@ -149,5 +149,8 @@ def spm_write_vol(image_volume_info, image_voxels, image_name, file_type):
         file_type = '.gii'
         data = image_voxels
         gi = nib.GiftiImage()
-        gi.add_gifti_data_array(nib.gifti.GiftiDataArray(image_voxels))
-        nib.gifti.giftiio.write(gi, image_name + file_type)
+        # Fix GIFTI datatype issue by explicitly specifying float32
+        data_array = nib.gifti.GiftiDataArray(image_voxels.astype(np.float32), datatype='float32')
+        gi.add_gifti_data_array(data_array)
+        # Use standard nibabel save function instead of deprecated giftiio.write
+        nib.save(gi, image_name + file_type)

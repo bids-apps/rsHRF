@@ -32,7 +32,7 @@ def knee_pt_helper(y, x=None):
         else:
             if x is None:
                 x_was_none = True
-                x = np.arange(1, np.amax(y.shape) + 1, dtype=np.int)
+                x = np.arange(1, np.amax(y.shape) + 1, dtype=int)
             if x.shape != y.shape:
                 print('knee_pt: y and x must have the same dimensions')
                 return res_x, idx_of_result
