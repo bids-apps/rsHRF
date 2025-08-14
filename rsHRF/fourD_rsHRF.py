@@ -85,7 +85,7 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
                rest_IdealFilter(bold_sig, para['TR'], para['passband'])   
     data_deconv  = np.zeros(bold_sig.shape)
     event_number = np.zeros((1, bold_sig.shape[1]))
-    print('Retrieving HRF ...')
+    print('Retrieving HRF (o:)...')
     #Estimate HRF for the fourier / hanning / gamma / cannon basis functions
     if not (para['estimation'] == 'sFIR' or para['estimation'] == 'FIR'):
         bf = basis_functions.basis_functions.get_basis_function(bold_sig.shape, para)
