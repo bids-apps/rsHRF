@@ -96,6 +96,7 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
         para['T'] = 1        
         beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(bold_sig, para, temporal_mask, p_jobs)
         hrfa = beta_hrf[:-1,:]
+        print(event_bold)
     nvar = hrfa.shape[1]
     PARA = np.zeros((3, nvar))
     for voxel_id in range(nvar):
