@@ -171,6 +171,7 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
             break 
         pos += 1
     event_plot = lil_matrix((1, nobs))
+    print('=========================================')
     if len(event_bold)>0:#event_bold.size:
         event_plot[:, event_bold[pos]] = 1
     else:
