@@ -118,7 +118,17 @@ def demo_rsHRF(input_file, mask_file, output_dir, para, p_jobs, file_type=".nii"
             data_deconv[:, voxel_id] = \
                 np.fft.ifft(H.conj() * M / (H * H.conj() + .1*np.mean((H * H.conj()))))
         else:
-            data_deconv[:, voxel_id] = iterative_wiener_deconv.rsHRF_iterative_wiener_deconv(bold_sig_deconv[:, voxel_id], hrf)
+            # Use new API with MATLAB v2.5 features (auto-recommendations based on TR and Mode)
+            # Default to 'rest' mode for resting-state fMRI (can be overridden in para dict)
+            deconv_mode = para.get('deconv_mode', 'rest')
+            data_deconv[:, voxel_id] = iterative_wiener_deconv.rsHRF_iterative_wiener_deconv(
+                bold_sig_deconv[:, voxel_id],
+                hrf,
+                TR=para['TR'],
+                MaxIter=para.get('deconv_MaxIter', 50),
+                Tol=para.get('deconv_Tol', 1e-4),
+                Mode=deconv_mode
+            )
         event_number[:, voxel_id] = np.amax(event_bold[voxel_id].shape)
     print('Done')
     print('Saving Output ...')
