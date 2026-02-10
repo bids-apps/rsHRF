@@ -1,28 +1,4 @@
-## Critical Bug Fixes - Ready for Upstream Integration
 
-**This branch contains essential fixes for the rsHRF package to ensure compatibility with modern Python environments.**
-
-### Issues Addressed:
-The rsHRF package currently has a critical dependency issue with `pyyawt`. This package is outdated, no longer maintained, has compatibility issues with modern Python versions, and suffers from wheel installation problems. This prevents the core iterative Wiener deconvolution algorithm from running, making the software unusable in current Python environments.
-
-### Fixes Applied:
-- **Modernized wavelet dependency**: Replaced unmaintained `pyyawt` with actively maintained `PyWavelets`
-- **Maintained scientific accuracy**: Implemented proper noise estimation using MAD (Median Absolute Deviation) method
-- **Enhanced stability**: Added bounds checking to prevent runtime errors
-- **Updated package configuration**: Fixed requirements.txt and setup.py with current, supported dependencies
-- **Modernized file I/O**: Updated deprecated GIFTI handling to use current nibabel functions
-
-### Testing:
-All existing unit tests have been updated and pass with the new dependencies. The mathematical accuracy of the HRF estimation remains unchanged - only the implementation details have been modernized.
-
-### Compatibility:
-These fixes ensure rsHRF works with:
-- Python 3.6+
-- Modern NumPy/SciPy versions
-- Current neuroimaging software stacks
-- Standard pip installation workflows
-
----
 
 Resting state HRF estimation and deconvolution.
 ========
