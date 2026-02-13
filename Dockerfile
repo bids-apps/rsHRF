@@ -16,7 +16,6 @@ RUN apt-get update && \
                     dc \
                     bc \
                     libgsl-dev && \
-    curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
     apt-get remove -y curl && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
@@ -37,9 +36,6 @@ RUN python -m pip install --no-cache-dir --upgrade pip setuptools && \
     python -m pip install --no-cache-dir joblib && \
     python -m pip install --no-cache-dir PyWavelets \
     && rm -rf ~/.cache/pip
-
-RUN python -m pip install .
-RUN python -m pip install --no-cache-dir --upgrade pip setuptools
 
 WORKDIR /rsHRF
 COPY . /rsHRF/
