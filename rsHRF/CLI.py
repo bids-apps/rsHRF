@@ -2,7 +2,7 @@ import sys
 import numpy as np
 import os.path as op
 import json
-from argparse import ArgumentParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from bids.layout import BIDSLayout
 from bids.config import set_option
 from pathlib import Path
@@ -20,16 +20,35 @@ with open(op.join(op.dirname(op.realpath(__file__)), "VERSION"), "r") as fh:
 
 def get_parser():
     parser = ArgumentParser(
-        description="retrieves the onsets of pseudo-events triggering a "
-        "haemodynamic response from resting state fMRI BOLD "
-        "voxel-wise signal"
+        description=(
+            "Estimate resting-state hemodynamic response functions (HRFs) "
+            "and optionally deconvolve BOLD signals."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  BIDS derivative input:\n"
+            "    rsHRF /path/to/fmriprep /path/to/output participant "
+            "--participant-label 0001 -m BIDS --estimation canon2dd\n\n"
+            "  Non-BIDS NIfTI/GIfTI input:\n"
+            "    rsHRF /path/to/bold.nii.gz /path/to/output --no-bids "
+            "-m /path/to/mask.nii.gz --TR 2 --estimation canon2dd\n\n"
+            "  Text time-series input:\n"
+            "    rsHRF /path/to/timeseries.txt /path/to/output --no-bids "
+            "--TR 2 --estimation canon2dd\n\n"
+            "  GUI mode:\n"
+            "    rsHRF GUI --no-bids"
+        ),
+        formatter_class=RawDescriptionHelpFormatter,
     )
 
     parser.add_argument(
         "bids_dir",
-        help="the input data for the analysis: a path to a data file or the root "
-        "folder of a BIDS valid dataset, or 'GUI' to run in graphical user interface "
-        "mode",
+        help=(
+            "Input data. For BIDS mode, provide the root directory of a BIDS "
+            "derivative dataset, such as an fMRIPrep derivatives folder. For "
+            "non-BIDS mode, provide a NIfTI, GIfTI, or text time-series file. "
+            "Use 'GUI' with --no-bids to launch the graphical interface."
+        ),
         default="GUI",
     )
 
@@ -37,16 +56,16 @@ def get_parser():
         "output_dir",
         action="store",
         type=op.abspath,
-        help="the output path for the outcomes of processing",
+        help="Directory where rsHRF outputs will be written.",
         nargs="?",
     )
 
     parser.add_argument(
         "analysis_level",
-        help="Level of the analysis that will be performed. "
-        "Multiple participant level analyses can be run independently "
-        "(in parallel) using the same output_dir. Only 'participant' level analysis is"
-        " allowed.",
+        help=(
+            "BIDS analysis level. Only 'participant' is currently supported. "
+            "Required in BIDS mode and omitted in --no-bids mode."
+        ),
         choices=["participant"],
         nargs="?",
     )
@@ -54,8 +73,10 @@ def get_parser():
     parser.add_argument(
         "--no-bids",
         action="store_true",
-        help="Explicitly disable bids input. Necessary when using txt or nii/gii files"
-        " directly.",
+        help=(
+            "Disable BIDS parsing and run directly on a NIfTI, GIfTI, or text "
+            "time-series input file. Required for non-BIDS inputs and GUI mode."
+        ),
     )
 
     parser.add_argument(
@@ -63,8 +84,10 @@ def get_parser():
         action="store",
         type=int,
         default=-1,
-        help="the number of parallel processing elements to use, default is -1 (use "
-        "all available cores)",
+        help=(
+            "Number of parallel jobs to use. Default: -1, which uses all "
+            "available cores."
+        ),
     )
 
     parser.add_argument(
@@ -76,11 +99,12 @@ def get_parser():
 
     parser.add_argument(
         "--participant-label",
-        help="The label(s) of the participant(s) that should be analyzed. The label "
-        "corresponds to sub-<participant_label> from the BIDS spec "
-        '(so it does not include "sub-"). If this parameter is not '
-        "provided all subjects should be analyzed. Multiple "
-        "participants can be specified with a space separated list.",
+        help=(
+            "Participant label(s) to analyze in BIDS mode. Labels correspond "
+            "to sub-<label> but should be provided without the 'sub-' prefix. "
+            "If omitted, all available subjects are analyzed. Multiple labels "
+            "can be supplied as a space-separated list."
+        ),
         nargs="+",
     )
 
@@ -88,8 +112,10 @@ def get_parser():
         "--bids-filter-file",
         action="store",
         type=op.abspath,
-        help="a JSON file describing custom BIDS input filters using PyBIDS. "
-        "For further details, please check out http://bids-apps.neuroimaging.io/rsHRF/",
+        help=(
+            "JSON file with custom PyBIDS filters for selecting input files "
+            "from a BIDS derivative dataset."
+        ),
     )
 
     parser.add_argument(
@@ -97,9 +123,10 @@ def get_parser():
         "--mask",
         action="store",
         type=str,
-        help="the absolute path to a single mask file, which should be of the same "
-        "type as the input file (NIfTI or GIfTI). Use 'BIDS' to enable the use of "
-        "mask files present in the BIDS directory itself.",
+        help=(
+            "Mask source. Use 'BIDS' to use masks found in the BIDS derivative "
+            "dataset, or provide a path to a NIfTI/GIfTI mask matching the input."
+        ),
     )
 
     group_para = parser.add_argument_group("Parameters")
@@ -108,13 +135,13 @@ def get_parser():
         "--estimation",
         action="store",
         choices=available_estimations,
-        help="Choose the estimation procedure from "
-        "canon2dd (canonical shape with 2 derivatives), "
-        "sFIR (smoothed Finite Impulse Response), "
-        "FIR (Finite Impulse Response), "
-        "fourier (Fourier Basis Set), "
-        "hanning (Fourier Basis w Hanning), "
-        f"gamma (Gamma Basis Set).",
+        help=(
+            "HRF estimation model. Choices: canon2dd (canonical HRF with time "
+            "and dispersion derivatives), sFIR (smoothed finite impulse "
+            "response), FIR (finite impulse response), fourier (Fourier basis "
+            "set), hanning (Fourier basis with Hanning window), gamma (Gamma "
+            "basis set)."
+        ),
         default=default_parameters["estimation"],
     )
 
@@ -125,7 +152,10 @@ def get_parser():
         nargs=2,
         metavar=("LOW_FREQ", "HIGH_FREQ"),
         default=default_parameters["passband"],
-        help="set intervals for bandpass filter, default is 0.01 - 0.08",
+        help=(
+            "Temporal band-pass filter for the BOLD signal, given as LOW_FREQ "
+            "HIGH_FREQ in Hz. Default: 0.01 0.08."
+        ),
     )
 
     group_para.add_argument(
@@ -135,15 +165,20 @@ def get_parser():
         nargs=2,
         metavar=("LOW_FREQ", "HIGH_FREQ"),
         default=default_parameters["passband_deconvolve"],
-        help="set intervals for bandpass filter (used while deconvolving BOLD), "
-        "default is no-filtering",
+        help=(
+            "Temporal band-pass filter used during BOLD deconvolution, given "
+            "as LOW_FREQ HIGH_FREQ in Hz. Default: no filtering."
+        ),
     )
 
     group_para.add_argument(
         "--TR",
         action="store",
         type=float,
-        help="set TR parameter",
+        help=(
+            "Repetition time in seconds. Required for text inputs and used as "
+            "a fallback when TR cannot be read from image metadata."
+        ),
         default=default_parameters["TR"],
     )
 
@@ -152,7 +187,10 @@ def get_parser():
         "-T",
         action="store",
         type=int,
-        help=f"set T parameter, default is {default_parameters['T']}",
+        help=(
+            f"Microtime resolution factor; dt = TR / T. "
+            f"Default: {default_parameters['T']}"
+        ),
         default=default_parameters["T"],
     )
 
@@ -161,7 +199,10 @@ def get_parser():
         action="store",
         type=int,
         default=default_parameters["T0"],
-        help=f"set T0 parameter, default is {default_parameters['T0']}",
+        help=(
+            f"Reference microtime bin for onset estimation. "
+            f"Default: {default_parameters['T0']}"
+        ),
     )
 
     group_para.add_argument(
@@ -170,7 +211,10 @@ def get_parser():
         dest="TD_DD",
         type=int,
         default=default_parameters["TD_DD"],
-        help=f"set TD_DD parameter, default is {default_parameters['TD_DD']}",
+        help=(
+            "Derivative setting for the canonical HRF model. "
+            f"Default: {default_parameters['TD_DD']}"
+        ),
     )
 
     group_para.add_argument(
@@ -178,7 +222,10 @@ def get_parser():
         action="store",
         type=int,
         default=default_parameters["AR_lag"],
-        help=f"set AR_lag parameter, default is {default_parameters['AR_lag']}",
+        help=(
+            "Autoregressive model lag for serial correlation. "
+            f"Default: {default_parameters['AR_lag']}"
+        ),
     )
 
     group_para.add_argument(
@@ -187,7 +234,10 @@ def get_parser():
         action="store",
         type=float,
         default=default_parameters["thr"],
-        help=f"set thr parameter, default is {default_parameters['thr']}",
+        help=(
+            "Point-process event threshold, expressed as mean + threshold * "
+            f"standard deviation. Default: {default_parameters['thr']}"
+        ),
     )
 
     group_para.add_argument(
@@ -195,8 +245,11 @@ def get_parser():
         "--tmask",
         action="store",
         type=op.abspath,
-        help="the path for the (temporal) mask file.\n The mask file should be a text "
-        "file, a sequence of 0s and 1s of the same length as the signal",
+        help=(
+            "Path to a temporal mask text file used to exclude time points, "
+            "for example after scrubbing. The file should contain a sequence "
+            "of 0s and 1s with the same length as the signal."
+        ),
     )
 
     group_para.add_argument(
@@ -204,9 +257,10 @@ def get_parser():
         action="store",
         type=int,
         default=default_parameters["order"],
-        help=f"set the number of basis vectors, default is "
-        f"{default_parameters['order']} (used for fourier, hanning and gamma basis "
-        "functions)",
+        help=(
+            "Number of basis vectors used for fourier, hanning, and gamma "
+            f"basis functions. Default: {default_parameters['order']}"
+        ),
     )
 
     group_para.add_argument(
@@ -214,7 +268,7 @@ def get_parser():
         action="store",
         type=int,
         default=default_parameters["len"],
-        help=f"set len parameter, default is {default_parameters['len']}s",
+        help=f"HRF duration in seconds. Default: {default_parameters['len']}",
     )
 
     group_para.add_argument(
@@ -222,7 +276,10 @@ def get_parser():
         action="store",
         type=int,
         default=default_parameters["min_onset_search"],
-        help=f"set min_onset_search parameter, default is {default_parameters['min_onset_search']}s",
+        help=(
+            "Minimum event-to-HRF onset delay searched, in seconds. "
+            f"Default: {default_parameters['min_onset_search']}"
+        ),
     )
 
     group_para.add_argument(
@@ -230,21 +287,27 @@ def get_parser():
         action="store",
         type=int,
         default=default_parameters["max_onset_search"],
-        help=f"set max_onset_search parameter, default is {default_parameters['max_onset_search']}s",
+        help=(
+            "Maximum event-to-HRF onset delay searched, in seconds. "
+            f"Default: {default_parameters['max_onset_search']}"
+        ),
     )
 
     group_para.add_argument(
         "--localK",
         action="store",
         type=int,
-        help=f"set localK, default is {default_parameters['localK']}",
+        help=(
+            "Local peak width used for point-process event detection. "
+            f"Default: {default_parameters['localK']}"
+        ),
         default=default_parameters["localK"],
     )
 
     group_para.add_argument(
         "--wiener",
         action="store_true",
-        help="to perform iterative wiener deconvolution",
+        help="Run iterative Wiener deconvolution after HRF estimation.",
     )
 
     return parser
