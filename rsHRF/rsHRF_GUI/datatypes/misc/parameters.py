@@ -36,7 +36,7 @@ class Parameters:
         return self.T
 
     def get_T0(self):
-        return self.get_T0
+        return self.T0
 
     def get_TD_DD(self):
         # TD_DD is only relevant for canon2dd estimation
@@ -46,21 +46,21 @@ class Parameters:
             return None
 
     def get_AR_lag(self):
-        return self.get_AR_lag
+        return self.AR_lag
 
     def get_thr(self):
         return self.thr
 
     def get_order(self):
         # order is only relevant for fourier and gamma estimation
-        if "gamma" in self.get_estimation or "fourier" in self.get_estimation:
+        if "gamma" in self.get_estimation() or "fourier" in self.get_estimation():
             return self.order
         else:
             return None
 
     def get_Volterra(self):
         # volterra is only relevant for canon2dd estimation
-        if self.get_estimation == "canon2dd":
+        if self.get_estimation() == "canon2dd":
             return self.volterra
         else:
             return None
@@ -414,7 +414,7 @@ class Parameters:
             elif key == "order":
                 out = self.set_order(dic[key])
             elif key == "Volterra":
-                out = self.set_thr(dic[key])
+                out = self.set_Volterra(dic[key])
             elif key == "len":
                 out = self.set_len(dic[key])
             elif key == "temporal_mask":

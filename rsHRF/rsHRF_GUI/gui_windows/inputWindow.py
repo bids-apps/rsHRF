@@ -1,4 +1,5 @@
 import os
+import sys
 from tkinter import (
     Toplevel,
     Checkbutton,
@@ -11,7 +12,27 @@ from tkinter import (
     StringVar,
     Label,
 )
+
 from ...utils.default_parameters import available_estimations
+
+SUPPORTED_IMAGE_FILETYPES = [
+    ("NIfTI/GIfTI files", ("*.nii", "*.nii.gz", "*.gii", "*.gii.gz")),
+    ("All files", "*.*"),
+]
+
+
+def ask_image_filename(title):
+    kwargs = {
+        "initialdir": os.getcwd(),
+        "title": title,
+    }
+
+    # macOS/Tk can crash in the native file dialog when filetypes are passed.
+    # Keep filters on Windows/Linux, but omit them on macOS to keep the GUI usable.
+    if sys.platform != "darwin":
+        kwargs["filetypes"] = SUPPORTED_IMAGE_FILETYPES
+
+    return filedialog.askopenfilename(**kwargs)
 
 
 class InputWindow:
@@ -19,9 +40,11 @@ class InputWindow:
         # input window
         window = Toplevel()
         window.title("Input Window")
+
         # get screen width and height
         screen_width = window.winfo_screenwidth()
         screen_height = window.winfo_screenheight()
+
         # placing the toplevel
         window.geometry(
             "350x220+%d+%d"
@@ -30,18 +53,22 @@ class InputWindow:
                 ((((1040.0 - 220) / 1000) * screen_height) - 390) - 280,
             )
         )
+
         # variables which shall get sent to the front end
         self.input_file = ()
         self.mask_file = ()
         self.file_type = ()
         self.output_dir = ()
-        # other class vairables
+
+        # other class variables
         # 1 corresponds to BIDS input
         self.inputFormatVar = IntVar()
         self.inputFormatVar.set(0)
+
         # 1 corresponds to mask file being present in the BIDS directory
         self.maskFormatVar = IntVar()
         self.maskFormatVar.set(0)
+
         # selecting the estimation rule
         self.estimationOption = StringVar()
         self.estimationOption.set("canon2dd")
@@ -51,25 +78,17 @@ class InputWindow:
                 self.input_file = filedialog.askdirectory(initialdir=os.getcwd())
                 maskFormat.configure(state=NORMAL)
             else:
-                self.input_file = filedialog.askopenfilename(
-                    initialdir=os.getcwd(),
-                    title="Input File Path",
-                    filetypes=(
-                        ("nifti files", "*.nii"),
-                        ("nifti files", "*.nii.gz"),
-                        ("gifti files", "*.gii"),
-                        ("gifti files", "*.gii.gz"),
-                    ),
-                )
+                self.input_file = ask_image_filename("Input File Path")
                 maskFormat.configure(state=DISABLED)
                 try:
                     self.file_type = self.input_file.split(os.extsep, 1)[-1]
                     self.file_type = "." + self.file_type
-                except:
+                except Exception:
                     self.file_type = ()
+
             try:
                 inputFileLabel.configure(text=self.input_file.split("/")[-1])
-            except:
+            except Exception:
                 inputFileLabel.configure(text="")
 
         def maskFormatButtonState():
@@ -86,19 +105,10 @@ class InputWindow:
             maskFormatButtonState()
 
         def getMaskFile():
-            self.mask_file = filedialog.askopenfilename(
-                initialdir=os.getcwd(),
-                title="Input File Path",
-                filetypes=(
-                    ("nifti files", "*.nii"),
-                    ("nifti files", "*.nii.gz"),
-                    ("gifti files", "*.gii"),
-                    ("gifti files", "*.gii.gz"),
-                ),
-            )
+            self.mask_file = ask_image_filename("Mask File Path")
             try:
                 maskFileLabel.configure(text=self.mask_file.split("/")[-1])
-            except:
+            except Exception:
                 maskFileLabel.configure(text="")
 
         def getOutputDir():
@@ -107,7 +117,7 @@ class InputWindow:
                 outputPathLabel.configure(
                     text="Output path: " + self.output_dir.split("/")[-1]
                 )
-            except:
+            except Exception:
                 outputPathLabel.configure(text="")
 
         # defining widgets
@@ -125,7 +135,11 @@ class InputWindow:
             command=maskFormatButtonState,
         )
         inputFormatButton = Button(
-            window, text="Select Input", command=getInputFile, height=1, width=20
+            window,
+            text="Select Input",
+            command=getInputFile,
+            height=1,
+            width=20,
         )
         maskFormatButton = Button(
             window,
@@ -147,8 +161,11 @@ class InputWindow:
         maskFileLabel = Label(window, text="")
         outputPathLabel = Label(window, text="")
         estimationDropDown = OptionMenu(
-            window, self.estimationOption, *available_estimations
+            window,
+            self.estimationOption,
+            *available_estimations,
         )
+
         # placing widgets
         inputFormat.grid(row=0, column=0, padx=(5, 5), pady=(5, 5))
         inputFormatButton.grid(row=0, column=1, padx=(5, 5), pady=(5, 5))
@@ -168,6 +185,7 @@ class InputWindow:
             mode = "bids w/ atlas"
         else:
             mode = "file"
+
         return (
             self.input_file,
             self.mask_file,
