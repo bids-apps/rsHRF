@@ -1,7 +1,6 @@
 """Utilities to handle BIDS inputs."""
 
 import os
-import sys
 import json
 from pathlib import Path
 
@@ -9,7 +8,6 @@ from pathlib import Path
 def write_derivative_description(bids_dir, deriv_dir):
     from ..__about__ import __version__, DOWNLOAD_URL
 
-    print(__version__)
     bids_dir = Path(bids_dir)
     deriv_dir = Path(deriv_dir)
     desc = {
@@ -30,12 +28,12 @@ def write_derivative_description(bids_dir, deriv_dir):
     if "RSHRF_DOCKER_TAG" in os.environ:
         desc["GeneratedBy"][0]["Container"] = {
             "Type": "docker",
-            "Tag": f"bids/rshrf:{os.environ['FMRIPREP_DOCKER_TAG']}",
+            "Tag": f"bids/rshrf:{os.environ['RSHRF_DOCKER_TAG']}",
         }
     if "RSHRF_SINGULARITY_URL" in os.environ:
         desc["GeneratedBy"][0]["Container"] = {
             "Type": "singularity",
-            "URI": os.getenv("FMRIPREP_SINGULARITY_URL"),
+            "URI": os.environ["RSHRF_SINGULARITY_URL"],
         }
 
     # Keys deriving from source dataset

@@ -1,3 +1,9 @@
+# Unreleased
+
+* `[Fixed]` `write_derivative_description` raised `KeyError` when `RSHRF_DOCKER_TAG` was set, and wrote
+  `"URI": null` when `RSHRF_SINGULARITY_URL` was set. Both branches now read the variable they gate on.
+* `[Fixed]` `write_derivative_description` no longer prints the version string to stdout.
+
 # rsHRF 1.5.8
 ## 12th September, 2021
 * `[Fixed]` Fixed bugs for rest_filter (was only estimating the first 5000 voxels.)
