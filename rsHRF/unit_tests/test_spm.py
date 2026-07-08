@@ -102,3 +102,29 @@ def test_spm_write_vol():
                 file_type = ".gii"
             assert os.path.isfile(fname + file_type)
             os.remove(fname + file_type)
+
+
+def test_spm_detrend_removes_polynomial_trend():
+    """p > 0 was unreachable: d.flatten(1) raised TypeError on modern NumPy."""
+    m = 20
+    t = np.arange(1, m + 1)
+    for p in (1, 2, 3):
+        # columns that are exactly degree-p polynomials in t
+        x = np.column_stack(
+            [
+                np.polyval(np.polyfit(t, 2.0 + 0.5 * t + 0.01 * t**2, p), t),
+                np.polyval(np.polyfit(t, -1.0 + 0.2 * t - 0.001 * t**3, p), t),
+            ]
+        )
+        y = spm.spm_detrend(x, p)
+        assert y.shape == x.shape
+        # an exact polynomial of degree p must be removed entirely
+        assert np.allclose(y, 0.0, atol=1e-8)
+
+
+def test_spm_detrend_order_zero_matches_general_path():
+    """The `if not p` shortcut must agree with the polynomial machinery."""
+    rng = np.random.default_rng(0)
+    x = rng.standard_normal((15, 4))
+    shortcut = spm.spm_detrend(x)
+    assert np.allclose(shortcut.sum(axis=0), 0.0, atol=1e-10)

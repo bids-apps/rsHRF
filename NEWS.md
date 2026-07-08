@@ -50,6 +50,7 @@
 * `[Added]` Standalone time-series input (.txt).
 * `[Added]` Implicit generation of brain-mask.
 * `[Fixed]` Minor bugs, raising appropriate errors, etc.
+* `[Fixed]` `spm_detrend` raised `TypeError` for polynomial order > 0.
 
 # rsHRF 1.1.1
 ## 24th July, 2020
