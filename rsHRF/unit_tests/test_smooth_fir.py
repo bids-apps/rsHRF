@@ -419,3 +419,21 @@ def test_wgr_FIR_estimation_HRF():
         ]
     )
     assert np.allclose(out2_exp, out2)
+
+
+def test_wgr_glsco_falls_back_when_solve_hits_a_singular_matrix():
+    """The except branch assigned lstsq's 4-tuple, so the fallback raised ValueError."""
+    # X.T @ X = [[14, 28], [28, 56]] -- determinant is exactly 0 in float arithmetic,
+    # so linalg.solve raises LinAlgError deterministically rather than merely warning.
+    X = np.array([[1.0, 2.0], [2.0, 4.0], [3.0, 6.0]])
+    Y = np.array([1.0, 0.0, -1.0])
+    sMRI = np.zeros((2, 2))
+
+    res_sum, Beta = smooth_fir.wgr_glsco(X, Y, sMRI=sMRI, AR_lag=0)
+
+    assert isinstance(Beta, np.ndarray)
+    assert Beta.shape == (2,)
+    assert np.all(np.isfinite(Beta))
+    # the defining property of a least-squares solution: residual orthogonal to X.
+    # zeros, X.T @ Y and ones all fail this, so it cannot be satisfied by accident.
+    assert np.allclose(X.T @ (Y - X @ Beta), 0.0, atol=1e-8)

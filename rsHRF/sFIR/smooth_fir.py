@@ -32,10 +32,10 @@ def wgr_regress(y, X):
     if R.shape[0] == R.shape[1]:
         try:
             b[perm] = linalg.solve(R, np.matmul(Q.T, y))
-        except:
-            b[perm] = linalg.lstsq(R, np.matmul(Q.T, y))
+        except linalg.LinAlgError:
+            b[perm] = linalg.lstsq(R, np.matmul(Q.T, y))[0]
     else:
-        b[perm] = linalg.lstsq(R, np.matmul(Q.T, y))
+        b[perm] = linalg.lstsq(R, np.matmul(Q.T, y))[0]
     return b
 
 
@@ -66,8 +66,8 @@ def wgr_glsco(X, Y, sMRI=[], AR_lag=0, max_iter=20):
         sMRI = np.array(sMRI)
         try:
             Beta = linalg.solve(np.matmul(X.T, X) + sMRI, np.matmul(X.T, Y))
-        except:
-            Beta = linalg.lstsq(np.matmul(X.T, X) + sMRI, np.matmul(X.T, Y))
+        except linalg.LinAlgError:
+            Beta = linalg.lstsq(np.matmul(X.T, X) + sMRI, np.matmul(X.T, Y))[0]
     resid = Y - np.matmul(X, Beta)
     if AR_lag == 0:
         res_sum = np.cov(resid)
@@ -92,10 +92,10 @@ def wgr_glsco(X, Y, sMRI=[], AR_lag=0, max_iter=20):
                 Beta = linalg.solve(
                     np.matmul(X_main.T, X_main) + sMRI, np.matmul(X_main.T, Y_main)
                 )
-            except:
+            except linalg.LinAlgError:
                 Beta = linalg.lstsq(
                     np.matmul(X_main.T, X_main) + sMRI, np.matmul(X_main.T, Y_main)
-                )
+                )[0]
         resid = Y[AR_lag:nobs] - X[AR_lag:nobs, :].dot(Beta)
         if max(np.absolute(Beta - Beta_temp)) < max_tol:
             break
@@ -135,9 +135,9 @@ def Fit_sFIR2(output, length, TR, input, T, flag_sfir, AR_lag):
         sMRI[0:NN, 0:NN] = sMRI0
         if AR_lag == 0:
             try:
-                hrf = linalg.solve((np.matmul(X.T, X) + sMRI), np.matmul(X.T, output))
-            except:
-                hrf = linalg.lstsq((np.matmul(X.T, X) + sMRI), np.matmul(X.T, output))
+                hrf = linalg.solve(np.matmul(X.T, X) + sMRI, np.matmul(X.T, output))
+            except linalg.LinAlgError:
+                hrf = linalg.lstsq(np.matmul(X.T, X) + sMRI, np.matmul(X.T, output))[0]
             resid = output - np.matmul(X, hrf)
             res_sum = np.cov(resid)
         else:
