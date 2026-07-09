@@ -795,3 +795,56 @@ def test_BIDS_filters(monkeypatch, tmp_path):
         )
         CLI.run_rsHRF()
         mock_call.assert_called_once()
+
+
+def test_temporal_mask_rejects_non_binary_tokens(monkeypatch, tmp_path):
+    """A text file with a stray non-0/1 token was silently absorbed into a wrong mask."""
+    d = tmp_path / "sub"
+    d.mkdir()
+    (d / "hello.txt").write_text("mock", encoding="utf-8")
+    bad = d / "mask.txt"
+    bad.write_text("0 1 2 1", encoding="utf-8")  # the '2' used to vanish -> [0, 1, 1]
+    with mock.patch("rsHRF.fourD_rsHRF.demo_rsHRF"):
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "rsHRF",
+                str(d / "hello.txt"),
+                str(d),
+                "--no-bids",
+                "--TR",
+                "2",
+                "--temporal-mask",
+                str(bad),
+            ],
+        )
+        with pytest.raises(SystemExit):
+            CLI.run_rsHRF()
+
+
+def test_temporal_mask_accepts_valid_formats(monkeypatch, tmp_path):
+    """A concatenated row and separator-delimited files must both still parse."""
+    d = tmp_path / "sub"
+    d.mkdir()
+    (d / "hello.txt").write_text("mock", encoding="utf-8")
+    for content in ("01011100", "0 1 0 1 1 1 0 0", "0,1,0,1"):
+        m = d / "mask.txt"
+        m.write_text(content, encoding="utf-8")
+        with mock.patch("rsHRF.fourD_rsHRF.demo_rsHRF") as mock_call:
+            monkeypatch.setattr(
+                sys,
+                "argv",
+                [
+                    "rsHRF",
+                    str(d / "hello.txt"),
+                    str(d),
+                    "--no-bids",
+                    "--TR",
+                    "2",
+                    "--temporal-mask",
+                    str(m),
+                ],
+            )
+            CLI.run_rsHRF()
+            mock_call.assert_called_once()

@@ -400,15 +400,23 @@ def run_rsHRF():
 
         if args.temporal_mask is not None:
             try:
-                f = open(args.temporal_mask, "r")
-                for line in f:
-                    for each in line:
-                        if each in ["0", "1"]:
-                            temporal_mask.append(int(each))
-            except:
+                with open(args.temporal_mask, "r") as f:
+                    content = f.read()
+            except (OSError, UnicodeDecodeError):
                 parser.error(
-                    "Unable to read temporal mask file. Please make sure the file is a text file, consisting of a sequence of 0s and 1s of the same length as the signal"
+                    "Unable to read temporal mask file. Please make sure it is a text "
+                    "file consisting of a sequence of 0s and 1s of the same length as "
+                    "the signal."
                 )
+            for each in content:
+                if each in ["0", "1"]:
+                    temporal_mask.append(int(each))
+                elif not (each.isspace() or each in [",", ";"]):
+                    parser.error(
+                        "Invalid character %r in temporal mask file; expected only 0s "
+                        "and 1s, optionally separated by whitespace, commas or "
+                        "semicolons." % each
+                    )
 
         if input_type != "BIDS":
             if para["TR"] <= 0:
