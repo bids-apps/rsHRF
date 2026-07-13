@@ -34,12 +34,6 @@ def demo_rsHRF(
     wiener=False,
     temporal_mask=[],
 ):
-    # book-keeping w.r.t parameter values
-    if "localK" not in para or para["localK"] == None:
-        if para["TR"] <= 2:
-            para["localK"] = 1
-        else:
-            para["localK"] = 2
     # creating the output-directory if not already present
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
@@ -129,19 +123,19 @@ def demo_rsHRF(
     print("Retrieving HRF ...")
     bf = None  # Initialize bf to avoid UnboundLocalError
     # Estimate HRF for the fourier / hanning / gamma / cannon basis functions
-    if not (para["estimation"] == "sFIR" or para["estimation"] == "FIR"):
-        bf = basis_functions.basis_functions.get_basis_function(bold_sig.shape, para)
-        beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(
-            bold_sig, para, temporal_mask, p_jobs, bf=bf
-        )
-        hrfa = np.dot(bf, beta_hrf[np.arange(0, bf.shape[1]), :])
-    # Estimate HRF for FIR and sFIR
-    else:
+    if para["estimation"] == "sFIR" or para["estimation"] == "FIR":
+        # Estimate HRF for FIR and sFIR
         para["T"] = 1
         beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(
             bold_sig, para, temporal_mask, p_jobs
         )
         hrfa = beta_hrf[:-1, :]
+    else:
+        bf = basis_functions.basis_functions.get_basis_function(bold_sig.shape, para)
+        beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(
+            bold_sig, para, temporal_mask, p_jobs, bf=bf
+        )
+        hrfa = np.dot(bf, beta_hrf[np.arange(0, bf.shape[1]), :])
 
     nvar = hrfa.shape[1]
     PARA = np.zeros((3, nvar))

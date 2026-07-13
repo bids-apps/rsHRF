@@ -27,7 +27,7 @@ def get_parser():
         epilog=(
             "Examples:\n"
             "  BIDS derivative input:\n"
-            "    rsHRF /path/to/fmriprep /path/to/output participant "
+            "    rsHRF /path/to/dataset/derivatives/fmriprep /path/to/output participant "
             "--participant-label 0001 -m BIDS --estimation canon2dd\n\n"
             "  Non-BIDS NIfTI/GIfTI input:\n"
             "    rsHRF /path/to/bold.nii.gz /path/to/output --no-bids "
@@ -200,7 +200,7 @@ def get_parser():
         type=int,
         default=default_parameters["T0"],
         help=(
-            f"Reference microtime bin for onset estimation. "
+            f"Reference microtime bin for onset estimation in units of T. "
             f"Default: {default_parameters['T0']}"
         ),
     )
@@ -209,6 +209,7 @@ def get_parser():
         "--TD",
         action="store",
         dest="TD_DD",
+        choices=[0, 1, 2],
         type=int,
         default=default_parameters["TD_DD"],
         help=(
@@ -323,6 +324,9 @@ def run_rsHRF():
     para = arg_groups["Parameters"]
     temporal_mask = []
 
+    if para["thr"] <= 0:
+        parser.error("--thr must be greater than 0")
+
     if args.bids_dir == "GUI" and args.no_bids:
         try:
             from .rsHRF_GUI import run as gui_run
@@ -400,27 +404,35 @@ def run_rsHRF():
 
         if args.temporal_mask is not None:
             try:
-                f = open(args.temporal_mask, "r")
-                for line in f:
-                    for each in line:
-                        if each in ["0", "1"]:
-                            temporal_mask.append(int(each))
-            except:
+                with open(args.temporal_mask, "r") as f:
+                    content = f.read()
+            except (OSError, UnicodeDecodeError):
                 parser.error(
-                    "Unable to read temporal mask file. Please make sure the file is a text file, consisting of a sequence of 0s and 1s of the same length as the signal"
+                    "Unable to read temporal mask file. Please make sure it is a text "
+                    "file consisting of a sequence of 0s and 1s of the same length as "
+                    "the signal."
                 )
+            for each in content:
+                if each in ["0", "1"]:
+                    temporal_mask.append(int(each))
+                elif not (each.isspace() or each in [",", ";"]):
+                    parser.error(
+                        "Invalid character %r in temporal mask file; expected only 0s "
+                        "and 1s, optionally separated by whitespace, commas or "
+                        "semicolons." % each
+                    )
 
         if input_type != "BIDS":
             if para["TR"] <= 0:
                 if input_type == "text":
-                    parser.error("Please supply a valid TR using -TR argument")
+                    parser.error("Please supply a valid TR using --TR argument")
                 else:  # it's 4D image
                     if ".nii" in args.bids_dir:
                         TR = (spm_dep.spm.spm_vol(args.bids_dir).header.get_zooms())[-1]
                     else:
-                        parser.error("Please supply a valid TR using -TR argument")
+                        parser.error("Please supply a valid TR using --TR argument")
                     if TR <= 0:
-                        parser.error("Please supply a valid TR using -TR argument")
+                        parser.error("Please supply a valid TR using --TR argument")
                     else:
                         print(
                             "Invalid or no TR supplied, using implicit TR: {0}".format(
@@ -435,6 +447,12 @@ def run_rsHRF():
                 np.trunc(para["max_onset_search"] / para["dt"]) + 1,
                 dtype="int",
             )
+
+            if "localK" not in para or para["localK"] == None:
+                if para["TR"] <= 2:
+                    para["localK"] = 1
+                else:
+                    para["localK"] = 2
 
             if input_type == "text":
                 file_type = op.splitext(args.bids_dir)[-1]
@@ -654,6 +672,13 @@ def run_rsHRF():
                     np.trunc(para["max_onset_search"] / para["dt"]) + 1,
                     dtype="int",
                 )
+
+                if "localK" not in para or para["localK"] == None:
+                    if para["TR"] <= 2:
+                        para["localK"] = 1
+                    else:
+                        para["localK"] = 2
+
                 num_errors += 1
                 try:
                     fourD_rsHRF.demo_rsHRF(

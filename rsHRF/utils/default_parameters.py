@@ -16,7 +16,7 @@ default_parameters["passband_deconvolve"] = [0.0, sys.float_info.max]
 default_parameters["TR"] = -1
 
 # Local peak width used for point-process event detection.
-default_parameters["localK"] = 1
+default_parameters["localK"] = None
 
 # Microtime resolution factor; dt = TR / T.
 default_parameters["T"] = 3

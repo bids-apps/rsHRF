@@ -129,7 +129,7 @@ def spm_detrend(x, p=0):
     G = np.zeros((m, p + 1))
     for i in range(0, p + 1):
         d = np.arange(1, m + 1) ** i
-        G[:, i] = d.flatten(1)
+        G[:, i] = d
     y = x - G.dot(np.linalg.pinv(G).dot(x))
     return y
 

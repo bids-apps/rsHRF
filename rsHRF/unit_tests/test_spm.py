@@ -4,6 +4,7 @@ import os
 import math
 import numpy as np
 import nibabel as nib
+from scipy import signal
 from scipy.special import gammaln
 from ..spm_dep import spm
 
@@ -102,3 +103,40 @@ def test_spm_write_vol():
                 file_type = ".gii"
             assert os.path.isfile(fname + file_type)
             os.remove(fname + file_type)
+
+
+def test_spm_detrend_matches_scipy_for_linear_order():
+    """Independent reference: scipy removes a least-squares line for p = 1."""
+    rng = np.random.default_rng(3)
+    x = rng.standard_normal((30, 4)) + np.linspace(0, 5, 30)[:, None]
+    assert np.allclose(spm.spm_detrend(x, 1), signal.detrend(x, axis=0, type="linear"))
+
+
+def test_spm_detrend_removes_trend_and_keeps_the_rest():
+    """p > 0 was unreachable: d.flatten(1) raised TypeError on modern NumPy."""
+    m = 24
+    t = np.arange(1, m + 1)
+    for p in (1, 2, 3):
+        trend = np.polyval(
+            np.polyfit(t, 3.0 - 0.4 * t + 0.02 * t**2 - 0.0005 * t**3, p), t
+        )
+        osc = np.sin(2 * np.pi * t / 6.0)
+        x = np.column_stack([trend + osc, trend - osc])
+
+        y = spm.spm_detrend(x, p)
+        assert y.shape == x.shape
+
+        # the polynomial trend is gone
+        G = np.column_stack([t**i for i in range(p + 1)]).astype(float)
+        assert np.allclose(np.linalg.pinv(G) @ y, 0.0, atol=1e-8)
+
+        # but the oscillation survives: an implementation that returns zeros fails here
+        assert np.abs(y).max() > 0.5
+
+
+def test_spm_detrend_order_zero_equals_mean_projection():
+    """The `if not p` shortcut must equal projecting out a constant column."""
+    rng = np.random.default_rng(0)
+    x = rng.standard_normal((15, 4))
+    G = np.ones((15, 1))
+    assert np.allclose(spm.spm_detrend(x, 0), x - G @ np.linalg.pinv(G) @ x)

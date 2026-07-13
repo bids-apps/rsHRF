@@ -323,7 +323,13 @@ class Core:
                 self.parameters.get_passband_deconvolve(),
             )
             para = self.parameters.get_parameters()
-            if not (para["estimation"] == "sFIR" or para["estimation"] == "FIR"):
+            if para["estimation"] == "sFIR" or para["estimation"] == "FIR":
+                # estimate HRF for FIR and sFIR
+                beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(
+                    bold_sig, para, [], -1
+                )
+                hrfa = beta_hrf
+            else:
                 # estimate HRF for the fourier / hanning / gamma / cannon basis functions
                 bf = basis_functions.basis_functions.get_basis_function(
                     bold_sig.shape, para
@@ -332,12 +338,6 @@ class Core:
                     bold_sig, para, [], -1, bf
                 )
                 hrfa = np.dot(bf, beta_hrf[np.arange(0, bf.shape[1]), :])
-            else:
-                # estimate HRF for FIR and sFIR
-                beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(
-                    bold_sig, para, [], -1
-                )
-                hrfa = beta_hrf
             # instantiating the time-series objects
             hrf = HRF(
                 label="HRF", ts=hrfa, subject_index=subject_index, para=self.parameters

@@ -44,9 +44,7 @@ def estimate_hrf(bold_sig, i, para, N, bf=None):
     localK = para["localK"]
     if para["estimation"] == "sFIR" or para["estimation"] == "FIR":
         # Estimate HRF for the sFIR or FIR basis functions
-        if np.count_nonzero(para["thr"]) == 1:
-            para["thr"] = np.array([para["thr"], np.inf])
-        thr = para["thr"]  # Thr is a vector for (s)FIR
+        thr = np.array([para["thr"], np.inf])  # Thr is a vector for (s)FIR
         u = wgr_BOLD_event_vector(N, dat, thr, localK, para["temporal_mask"])
         u = u.toarray().flatten("C").ravel().nonzero()[0]
         beta_hrf, event_bold = sFIR.smooth_fir.wgr_FIR_estimation_HRF(u, dat, para, N)

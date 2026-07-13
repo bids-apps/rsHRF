@@ -1,3 +1,13 @@
+# Unreleased
+
+* `[Fixed]` `write_derivative_description` raised `KeyError` when `RSHRF_DOCKER_TAG` was set, and wrote
+  `"URI": null` when `RSHRF_SINGULARITY_URL` was set. Both branches now read the variable they gate on.
+* `[Fixed]` `write_derivative_description` no longer prints the version string to stdout.
+* `[Fixed]` `spm_detrend` raised `TypeError` for polynomial order > 0.
+* `[Fixed]` the `linalg.solve` fallbacks in `sFIR/smooth_fir.py` assigned `lstsq`'s 4-tuple
+  rather than its solution, so they raised `ValueError` instead of falling back.
+* `[Fixed]` the `--temporal-mask` parser now rejects files containing anything other than 0s, 1s and separators, instead of silently dropping the bad characters and building a wrong-length mask.
+
 # rsHRF 1.5.8
 ## 12th September, 2021
 * `[Fixed]` Fixed bugs for rest_filter (was only estimating the first 5000 voxels.)
