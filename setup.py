@@ -50,8 +50,6 @@ setup(
         "pybids==0.11.1",
         "pandas",
         "patsy",
-        "mpld3",
-        "duecredit",
         "joblib",
         "PyWavelets",
     ],
