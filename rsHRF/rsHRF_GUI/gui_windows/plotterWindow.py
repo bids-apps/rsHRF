@@ -1,4 +1,3 @@
-import mpld3
 import matplotlib
 
 try:

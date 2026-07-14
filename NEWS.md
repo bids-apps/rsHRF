@@ -7,6 +7,8 @@
 * `[Fixed]` the `linalg.solve` fallbacks in `sFIR/smooth_fir.py` assigned `lstsq`'s 4-tuple
   rather than its solution, so they raised `ValueError` instead of falling back.
 * `[Fixed]` the `--temporal-mask` parser now rejects files containing anything other than 0s, 1s and separators, instead of silently dropping the bad characters and building a wrong-length mask.
+* `[Changed]` removed the unused `mpld3` import and the unused `duecredit` dependency.
+* `[Fixed]` the repository URL in `__about__.py` (`BIDSapps` -> `BIDS-Apps`).
 
 # rsHRF 1.5.8
 ## 12th September, 2021
