@@ -247,7 +247,7 @@ def demo_rsHRF(
         pos += 1
 
     event_plot = lil_matrix((1, nobs))
-    if event_bold.size:
+    if pos < hrfa_TR.shape[1] and event_bold[pos].size:
         event_plot[:, event_bold[pos]] = 1
     else:
         print("No Events Detected!")
