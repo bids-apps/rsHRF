@@ -9,6 +9,7 @@
 * `[Fixed]` the `--temporal-mask` parser now rejects files containing anything other than 0s, 1s and separators, instead of silently dropping the bad characters and building a wrong-length mask.
 * `[Changed]` removed the unused `mpld3` import and the unused `duecredit` dependency.
 * `[Fixed]` the repository URL in `__about__.py` (`BIDSapps` -> `BIDS-Apps`).
+* `[Fixed]` file paths are now parsed with `os.path.basename` instead of `split("/")`, so filename and subject-ID extraction works on Windows.
 
 # rsHRF 1.5.8
 ## 12th September, 2021

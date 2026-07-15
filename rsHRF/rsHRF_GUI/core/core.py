@@ -156,8 +156,8 @@ class Core:
                 all_prefix_match = False
                 prefix_match_count = 0
                 for i in range(len(all_inputs)):
-                    input_prefix = all_inputs[i].split("/")[-1].split("_desc")[0]
-                    mask_prefix = all_masks[i].split("/")[-1].split("_desc")[0]
+                    input_prefix = os.path.basename(all_inputs[i]).split("_desc")[0]
+                    mask_prefix = os.path.basename(all_masks[i]).split("_desc")[0]
 
                     if input_prefix == mask_prefix:
                         prefix_match_count += 1
@@ -204,7 +204,7 @@ class Core:
             mask_file = mask_file
         # getting the subject index
         try:
-            subject_index = input_file.split("/")[-1].split("_")[0][4:]
+            subject_index = os.path.basename(input_file).split("_")[0][4:]
         except:
             return Status(False, error="Input file should begin with 'sub-'")
         # obtaining the header for the mask
