@@ -12,6 +12,7 @@
 * `[Fixed]` file paths are now parsed with `os.path.basename` instead of `split("/")`, so filename and subject-ID extraction works on Windows.
 * `[Fixed]` the "No Events Detected!" check now looks at the events of the voxel being plotted (`event_bold[pos]`) instead of the size of the whole `event_bold` array, which was almost always non-zero. Also guards against `pos` overflowing when no voxel has an HRF.
 * `[Fixed]` the BIDS processing loop now catches `Exception` instead of a bare `except:`, so `KeyboardInterrupt` (Ctrl+C) and `SystemExit` are no longer swallowed while iterating over input-mask pairs.
+* `[Fixed]` the GIfTI mask/input dimension check compared the input to itself (`v` vs `v`) so it never detected a mismatch; it now compares the input against the mask (`v1` vs `v`), like the NIfTI branch.
 
 # rsHRF 1.5.8
 ## 12th September, 2021

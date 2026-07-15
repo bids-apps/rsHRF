@@ -232,7 +232,7 @@ class Core:
             and v1.header.get_data_shape()[:-1] != v.header.get_data_shape()
         ) or (
             (file_type == ".gii" or file_type == ".gii.gz")
-            and v.agg_data().shape[0] != v.agg_data().shape[0]
+            and v1.agg_data().shape[0] != v.agg_data().shape[0]
         ):
             return Status(
                 False,
