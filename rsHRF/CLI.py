@@ -695,7 +695,7 @@ def run_rsHRF():
                     num_errors -= 1
                 except ValueError as err:
                     print(err.args[0])
-                except:
+                except Exception:
                     print("Unexpected error:", sys.exc_info()[0])
             success = len(all_inputs) - num_errors
             if success == 0:
