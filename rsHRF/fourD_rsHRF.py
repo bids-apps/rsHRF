@@ -40,17 +40,17 @@ def demo_rsHRF(
     # for four-dimensional input
     if mode != "time-series":
         if mode == "bids" or mode == "bids w/ atlas":
-            name = input_file.split("/")[-1].split(".")[0]
+            name = os.path.basename(input_file).split(".")[0]
             v1 = spm_dep.spm.spm_vol(input_file)
         else:
-            name = input_file.split("/")[-1].split(".")[0]
+            name = os.path.basename(input_file).split(".")[0]
             v1 = spm_dep.spm.spm_vol(input_file)
         if mask_file != None:
             if mode == "bids":
-                mask_name = mask_file.split("/")[-1].split(".")[0]
+                mask_name = os.path.basename(mask_file).split(".")[0]
                 v = spm_dep.spm.spm_vol(mask_file)
             else:
-                mask_name = mask_file.split("/")[-1].split(".")[0]
+                mask_name = os.path.basename(mask_file).split(".")[0]
                 v = spm_dep.spm.spm_vol(mask_file)
             if file_type == ".nii" or file_type == ".nii.gz":
                 brain = spm_dep.spm.spm_read_vols(v)
@@ -93,7 +93,7 @@ def demo_rsHRF(
         bold_sig = stats.zscore(data1[:, voxel_ind], ddof=1)
     # for time-series input
     else:
-        name = input_file.split("/")[-1].split(".")[0]
+        name = os.path.basename(input_file).split(".")[0]
         data1 = np.loadtxt(input_file, delimiter=",")
         if data1.ndim == 1:
             data1 = np.expand_dims(data1, axis=1)
