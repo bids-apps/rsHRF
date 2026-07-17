@@ -262,6 +262,8 @@ def test_gnii(monkeypatch, tmp_path):
                     np.trunc(para["max_onset_search"] / para["dt"]) + 1,
                     dtype="int",
                 )
+                if para["localK"] is None:
+                    para["localK"] = 1 if para["TR"] <= 2 else 2
                 mock_call.assert_called_once()
 
                 call_args = mock_call.call_args
