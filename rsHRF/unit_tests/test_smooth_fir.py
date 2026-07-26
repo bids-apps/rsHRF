@@ -437,3 +437,53 @@ def test_wgr_glsco_falls_back_when_solve_hits_a_singular_matrix():
     # the defining property of a least-squares solution: residual orthogonal to X.
     # zeros, X.T @ Y and ones all fail this, so it cannot be satisfied by accident.
     assert np.allclose(X.T @ (Y - X @ Beta), 0.0, atol=1e-8)
+
+
+class _DelayRecorder:
+    """Wraps the event vector u and records which shifts the FIR loop
+    subtracts, so a test can observe exactly which delays were searched
+    without modifying the function under test."""
+
+    def __init__(self, u):
+        self.u = np.asarray(u)
+        self.searched = []
+
+    def __sub__(self, shift):
+        self.searched.append(int(shift))
+        return self.u - shift
+
+
+def test_fir_searches_within_requested_window():
+    """FIR/sFIR must search only delays inside the user's
+    [min_onset_search, max_onset_search] window. Before the lag-recompute
+    fix the loop shifted by the counter 1..nlag, so it drifted outside the
+    window (e.g. searching 1s and 2s when 6-8s was requested). Several
+    (TR, window) cases are checked because the drift is masked for some
+    combinations and only visible for others."""
+    cases = [(2.0, 4, 8), (1.0, 6, 8), (1.5, 4, 8), (3.0, 6, 10)]
+
+    for TR, min_onset, max_onset in cases:
+        dt = TR / 1  # FIR resets T to 1, so dt = TR
+        lag = np.arange(
+            np.trunc(min_onset / dt),
+            np.trunc(max_onset / dt) + 1,
+            dtype=int,
+        )
+        # event indices large enough that u - i_lag stays positive,
+        # so the fitting path is actually exercised
+        u = _DelayRecorder(np.array([20, 55, 90, 120]))
+        para = {
+            "estimation": "FIR",
+            "TR": TR,
+            "AR_lag": 1,
+            "len": 24,
+            "lag": lag,
+        }
+        smooth_fir.wgr_FIR_estimation_HRF(u, np.linspace(-1, 1, 152), para, 152)
+
+        for shift in u.searched:
+            d = shift * TR
+            assert min_onset - dt <= d <= max_onset, (
+                f"TR={TR} [{min_onset}, {max_onset}]: "
+                f"FIR searched {d}s, outside the requested window"
+            )

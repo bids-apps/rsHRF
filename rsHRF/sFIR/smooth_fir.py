@@ -164,7 +164,7 @@ def wgr_FIR_estimation_HRF(u, dat, para, N):
     hrf = np.zeros((len_bin + 1, nlag))
     Cov_E = np.zeros((1, nlag))
     kk = 0
-    for i_lag in range(1, nlag + 1):
+    for i_lag in lag:
         RR = u - i_lag
         RR = RR[RR >= 0]
         if RR.size != 0:
