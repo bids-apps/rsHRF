@@ -15,6 +15,7 @@
 * `[Fixed]` the GIfTI mask/input dimension check compared the input to itself (`v` vs `v`) so it never detected a mismatch; it now compares the input against the mask (`v1` vs `v`), like the NIfTI branch.
 * `[Fixed]` `test_gnii` now derives `localK` from `TR` the same way `CLI.py` does, so the test matches the runtime behaviour introduced in #37 instead of comparing against the raw `None` default.
 * `[Changed]` Replaced deprecated `numpy.matlib.repmat` with `numpy.tile` in `rest_filter.py`; `numpy.matlib` is deprecated and the two produce identical output for the scalar-mean broadcast used here.
+* `[Fixed]` FIR/sFIR estimation now recomputes the lag range after `T` is reset to 1, and the search loop iterates over the lag values instead of the loop counter, so it searches delays within the requested `[min_onset_search, max_onset_search]` window instead of drifting outside it.
 
 # rsHRF 1.5.8
 ## 12th September, 2021
