@@ -324,6 +324,7 @@ class Core:
             )
             para = self.parameters.get_parameters()
             if para["estimation"] == "sFIR" or para["estimation"] == "FIR":
+                utils.hrf_estimation.apply_fir_microtime_grid(para)
                 # estimate HRF for FIR and sFIR
                 beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(
                     bold_sig, para, [], -1
