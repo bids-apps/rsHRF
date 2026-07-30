@@ -125,13 +125,7 @@ def demo_rsHRF(
     # Estimate HRF for the fourier / hanning / gamma / cannon basis functions
     if para["estimation"] == "sFIR" or para["estimation"] == "FIR":
         # Estimate HRF for FIR and sFIR
-        para["T"] = 1
-        para["dt"] = para["TR"] / para["T"]
-        para["lag"] = np.arange(
-            np.trunc(para["min_onset_search"] / para["dt"]),
-            np.trunc(para["max_onset_search"] / para["dt"]) + 1,
-            dtype=int,
-        )
+        utils.hrf_estimation.apply_fir_microtime_grid(para)
         beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(
             bold_sig, para, temporal_mask, p_jobs
         )

@@ -13,6 +13,24 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
+
+def apply_fir_microtime_grid(para):
+    """
+    sFIR/FIR cannot use a time grid finer than TR,
+    thus we fix micro-time resolution factor to (T=1), this function makes sure
+    lag is computed accurately depending on dt and T
+    dt= TR / T
+    lag is in units of dt
+    """
+    para["T"] = 1
+    para["dt"] = para["TR"] / para["T"]
+    para["lag"] = np.arange(
+        np.trunc(para["min_onset_search"] / para["dt"]),
+        np.trunc(para["max_onset_search"] / para["dt"]) + 1,
+        dtype=int,
+    )
+
+
 """
 HRF ESTIMATION
 """

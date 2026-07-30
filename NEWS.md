@@ -17,6 +17,7 @@
 * `[Changed]` Replaced deprecated `numpy.matlib.repmat` with `numpy.tile` in `rest_filter.py`; `numpy.matlib` is deprecated and the two produce identical output for the scalar-mean broadcast used here.
 * `[Fixed]` FIR/sFIR estimation now recomputes the lag range after `T` is reset to 1, and the search loop iterates over the lag values instead of the loop counter, so it searches delays within the requested `[min_onset_search, max_onset_search]` window instead of drifting outside it.
 * `[Fixed]` `wgr_get_parameters` read the response height one sample too early when the peak sits at the end of a plateau: the plateau walk-back assigned `hdrf[cnt - 1]` where MATLAB's `rsHRF_get_HRF_parameters.m` uses `hdrf(cnt)`, i.e. `hdrf[cnt]` zero-based. Only the height map was affected; time-to-peak and FWHM were already correct.
+* `[Fixed]` The GUI's FIR/sFIR path never reset `T` to 1 or recomputed the lag range, because `Core.retrieveHRF` calls `compute_hrf` directly instead of going through `fourD_rsHRF`. With the default `T = 3` it searched delays three times outside the requested window — 12-24s for the default `[4, 8]` request. Both paths now call `apply_fir_microtime_grid`, so the fix from #45 can no longer apply to one caller and not the other.
 
 # rsHRF 1.5.8
 ## 12th September, 2021
