@@ -6,6 +6,10 @@ warnings.filterwarnings("ignore")
 
 def knee_pt(y):
     res_x, _id = knee_pt_helper(y)
+    # knee_pt_helper returns nan sentinel on bad input, causing
+    # meaningless errors. In the MATLAB version, an error() is raised here.
+    if not np.isfinite(_id):
+        return res_x, _id
     _idm = np.argmin(y)
     ratio = np.abs(y[_id] - y[_idm]) / np.abs(np.max(y) - np.min(y))
     if ratio > 0.5:
