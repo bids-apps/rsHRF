@@ -448,11 +448,7 @@ def run_rsHRF():
                 dtype="int",
             )
 
-            if "localK" not in para or para["localK"] == None:
-                if para["TR"] <= 2:
-                    para["localK"] = 1
-                else:
-                    para["localK"] = 2
+            utils.hrf_estimation.apply_localK_default(para)
 
             if input_type == "text":
                 file_type = op.splitext(args.bids_dir)[-1]
@@ -673,11 +669,7 @@ def run_rsHRF():
                     dtype="int",
                 )
 
-                if "localK" not in para or para["localK"] == None:
-                    if para["TR"] <= 2:
-                        para["localK"] = 1
-                    else:
-                        para["localK"] = 2
+                utils.hrf_estimation.apply_localK_default(para)
 
                 num_errors += 1
                 try:
