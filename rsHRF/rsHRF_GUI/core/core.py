@@ -323,6 +323,7 @@ class Core:
                 self.parameters.get_passband_deconvolve(),
             )
             para = self.parameters.get_parameters()
+            utils.hrf_estimation.apply_localK_default(para)
             if para["estimation"] == "sFIR" or para["estimation"] == "FIR":
                 utils.hrf_estimation.apply_fir_microtime_grid(para)
                 # estimate HRF for FIR and sFIR

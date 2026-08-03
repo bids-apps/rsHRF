@@ -31,6 +31,19 @@ def apply_fir_microtime_grid(para):
     )
 
 
+def apply_localK_default(para):
+    """
+    wgr_BOLD_event_vector uses k as the local peak width, localK's default value is None
+    and if it stays as None, raises a TypeError in range(1+k, ...) line. CLI derives
+    localK from TR during runtime. This function gathers the logic in one place.
+    """
+    if "localK" not in para or para["localK"] is None:
+        if para["TR"] <= 2:
+            para["localK"] = 1
+        else:
+            para["localK"] = 2
+
+
 """
 HRF ESTIMATION
 """
