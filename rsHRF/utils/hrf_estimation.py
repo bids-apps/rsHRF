@@ -162,17 +162,14 @@ def wgr_BOLD_event_vector(N, matrix, thr, k, temporal_mask):
             ):
                 data[0, t - 1] = 1
     else:
-        tmp = temporal_mask
-        for i in range(len(temporal_mask)):
-            if tmp[i] == 1:
-                temporal_mask[i] = i
-        datm = np.mean(matrix[temporal_mask])
-        datstd = np.std(matrix[temporal_mask])
+        keep = np.asarray(temporal_mask, dtype=bool)
+        datm = np.mean(matrix[keep])
+        datstd = np.std(matrix[keep])
         if datstd == 0:
             datstd = 1
         matrix = (matrix - datm) / datstd
         for t in range(1 + k, N - k + 1):
-            if tmp[t - 1]:
+            if keep[t - 1]:
                 if (
                     matrix[t - 1, 0] > thr[0]
                     and np.all(matrix[t - k - 1 : t - 1, 0] < matrix[t - 1, 0])
