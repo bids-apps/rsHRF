@@ -170,8 +170,8 @@ def demo_rsHRF(
                 sig_deconv[:, voxel_id],
                 hrf,
                 TR=p_para["TR"],
-                MaxIter=p_para.get("deconv_MaxIter", 50),
-                Tol=p_para.get("deconv_Tol", 1e-4),
+                MaxIter=p_para.get("deconv_maxiter", 50),
+                Tol=p_para.get("deconv_tol", 1e-4),
                 Mode=deconv_mode,
             )
 
