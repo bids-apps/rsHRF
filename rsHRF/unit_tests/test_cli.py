@@ -252,6 +252,9 @@ def test_gnii(monkeypatch, tmp_path):
                         "max_onset_search",
                         "localK",
                         "wiener",
+                        "deconv_maxiter",
+                        "deconv_tol",
+                        "deconv_mode",
                     ]
                 }
                 para["temporal_mask"] = None

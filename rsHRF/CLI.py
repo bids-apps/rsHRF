@@ -159,6 +159,31 @@ def get_parser():
     )
 
     group_para.add_argument(
+        "--deconv-maxiter",
+        type=int,
+        default=default_parameters["deconv_maxiter"],
+        help=("The upper limit for the deconvolution iterations."),
+    )
+    group_para.add_argument(
+        "--deconv-tol",
+        type=float,
+        default=default_parameters["deconv_tol"],
+        help=(
+            "Convergence tolerance. Iteration stops once the relative difference between two successive estimates falls below this value. Default: 1e-4"
+        ),
+    )
+    group_para.add_argument(
+        "--deconv-mode",
+        choices=["rest", "task"],
+        default=default_parameters["deconv_mode"],
+        help=(
+            'Preset for the deconvolution defaults, either "rest" or "task". It only '
+            "selects the smoothing width and low-pass cutoff: rest uses a wider kernel "
+            "and a lower cutoff, task a narrower kernel and a higher one. Default: rest."
+        ),
+    )
+
+    group_para.add_argument(
         "--passband-deconvolve",
         action="store",
         type=float,
