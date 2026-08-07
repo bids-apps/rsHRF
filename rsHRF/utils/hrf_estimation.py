@@ -75,12 +75,14 @@ def estimate_hrf(bold_sig, i, para, N, bf=None):
     localK = para["localK"]
     if para["estimation"] == "sFIR" or para["estimation"] == "FIR":
         # Estimate HRF for the sFIR or FIR basis functions
-        thr = np.array([para["thr"], np.inf])  # Thr is a vector for (s)FIR
+        thr = np.append(
+            np.atleast_1d(para["thr"]), np.inf
+        )  # the CLI gives a scalar, the GUI a list
         u = wgr_BOLD_event_vector(N, dat, thr, localK, para["temporal_mask"])
         u = u.toarray().flatten("C").ravel().nonzero()[0]
         beta_hrf, event_bold = sFIR.smooth_fir.wgr_FIR_estimation_HRF(u, dat, para, N)
     else:
-        thr = [para["thr"]]  # Thr is a scalar for the basis functions
+        thr = np.atleast_1d(para["thr"])  # the CLI gives a scalar, the GUI a list
         u0 = wgr_BOLD_event_vector(N, dat, thr, localK, para["temporal_mask"])
         u = np.append(u0.toarray(), np.zeros((para["T"] - 1, N)), axis=0)
         u = np.reshape(u, (1, -1), order="F")

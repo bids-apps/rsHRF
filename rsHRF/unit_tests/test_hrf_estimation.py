@@ -109,3 +109,41 @@ def test_temporal_mask_is_not_modified():
     assert (
         tm_before == tm
     ), f"The caller's temporal mask was modified: {tm_before} became {tm}"
+
+
+def test_estimate_hrf_accepts_both_scalar_and_list():
+    """
+    thr arrives with a different type depending on the caller. The CLI passes a
+    scalar, while the GUI's set_thr wraps it in a list for FIR/sFIR even when the
+    user types a single number. estimate_hrf has to accept both: without
+    np.atleast_1d, np.array([para["thr"], np.inf]) builds a ragged array from a
+    list and raises ValueError, so every GUI FIR/sFIR run crashed once the user
+    applied parameters.
+
+    There is no assertion here on purpose, the call raising is the failure.
+    """
+    TR = 2
+    estimation = "FIR"
+    AR_lag = 1
+    min_onset_search = 4
+    max_onset_search = 8
+    N = len(_SIG)
+
+    for thr in (1, [1, 3]):
+        para = {
+            "TR": TR,
+            "thr": thr,
+            "len": 24,
+            "temporal_mask": list(_MASK),
+            "estimation": estimation,
+            "AR_lag": AR_lag,
+            "min_onset_search": min_onset_search,
+            "max_onset_search": max_onset_search,
+            "localK": None,
+            "T": None,
+            "dt": None,
+            "lag": None,
+        }
+        hrf_estimation.apply_fir_microtime_grid(para)  # sets T, dt, lag in para
+        hrf_estimation.apply_localK_default(para)  # sets localK in para
+        hrf_estimation.estimate_hrf(_SIG[:, None], 0, para, N)
