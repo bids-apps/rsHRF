@@ -23,6 +23,14 @@
 * `[Fixed]` `wgr_BOLD_event_vector` converted the 0/1 temporal mask into indices in place, leaving `0` at every dropped position, so each scrubbed frame entered the mean and standard deviation as `matrix[0]` instead of being excluded, and the resulting scale error changed which frames were detected as events. The conversion also wrote through to the caller's list, which `compute_hrf` shares across every voxel. Both are gone: the mask is now read with boolean indexing, the direct equivalent of MATLAB's `matrix(temporal_mask)`. Only runs that pass `--temporal-mask` are affected, and for those the detected events change.
 * `[Fixed]` `estimate_hrf` assumed `para["thr"]` was a scalar, but the GUI's `set_thr` wraps it in a list for FIR/sFIR even when the user types a single number, so `np.array([para["thr"], np.inf])` built a ragged array and raised `ValueError`. Because `main.py` pushes the whole parameter form back through `set_parameters` on every update, this hit any GUI FIR/sFIR run once the user applied parameters, not just comma-separated input. Both branches now use `np.atleast_1d`, which accepts the scalar from the CLI and the list from the GUI; the CLI path is unchanged.
 * `[Fixed]` The Wiener deconvolution read `deconv_MaxIter`, `deconv_Tol` and `deconv_mode` from `para`, but nothing ever set them and there were no CLI arguments, so `.get` always fell back to its hardcoded default and the parameters were unreachable. They are now exposed as `--deconv-maxiter`, `--deconv-tol` and `--deconv-mode`, with the defaults moved into `default_parameters`. Behaviour is unchanged at the defaults. Note that MATLAB's `rsHRF_deconv_job` passes `MaxIter = 10` while Python's default is 50.
+* `[Fixed]` When no mask or atlas was supplied, the generated brain mask was built by
+  flattening the volume in C order (`data.reshape(-1, data.shape[3])`), while the data it
+  indexes is flattened in Fortran order a few lines below. `voxel_ind` therefore pointed at
+  different voxels than the ones that were extracted and written back, so the variance
+  criterion selected the wrong set: some zero-variance voxels were analysed and some real
+  ones were skipped. The mask branch was already consistent, because `spm_read_vols`
+  flattens in Fortran order. Only runs without a mask or atlas are affected, and for those
+  the set of analysed voxels changes.
 
 # rsHRF 1.5.8
 ## 12th September, 2021
