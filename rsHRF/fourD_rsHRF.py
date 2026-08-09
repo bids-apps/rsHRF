@@ -81,7 +81,9 @@ def demo_rsHRF(
             print("No atlas provided! Generating mask file...")
             if file_type == ".nii" or file_type == ".nii.gz":
                 data = v1.get_fdata()
-                brain = np.nanvar(data.reshape(-1, data.shape[3]), -1, ddof=0)
+                brain = np.nanvar(
+                    data.reshape(-1, data.shape[3], order="F"), -1, ddof=0
+                )
             else:
                 data = v1.agg_data()
                 brain = np.nanvar(data, -1, ddof=0)
