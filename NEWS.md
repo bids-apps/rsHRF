@@ -31,14 +31,21 @@
   ones were skipped. The mask branch was already consistent, because `spm_read_vols`
   flattens in Fortran order. Only runs without a mask or atlas are affected, and for those
   the set of analysed voxels changes.
-  * `[Fixed]` `rest_IdealFilter` restored the mean of the filtered signal with
-  `np.mean(x1)`, which takes no axis and therefore returns a single value for the whole
-  chunk, where MATLAB's `repmat(mean(x1,1), size(x1,1), 1)` restores each column's own
-  mean. Behaviour is unchanged on every current call path — the CLI, the GUI and the
-  consistency test all z-score the data before filtering, so the column means are already
-  zero — but the function now matches MATLAB for callers that pass unstandardised data.
-  Also drops the `np.tile`, since broadcasting the `(1, n)` mean avoids materialising a
-  full-size intermediate array.
+* `[Fixed]` `rest_IdealFilter` restored the mean of the filtered signal with
+`np.mean(x1)`, which takes no axis and therefore returns a single value for the whole
+chunk, where MATLAB's `repmat(mean(x1,1), size(x1,1), 1)` restores each column's own
+mean. Behaviour is unchanged on every current call path — the CLI, the GUI and the
+consistency test all z-score the data before filtering, so the column means are already
+zero — but the function now matches MATLAB for callers that pass unstandardised data.
+Also drops the `np.tile`, since broadcasting the `(1, n)` mean avoids materialising a
+full-size intermediate array.
+* `[Fixed]` The FIR/sFIR path did not append the selected lag to `beta_hrf`, although
+MATLAB's `rsHRF_estimation_FIR.m` does and so does the basis path in `wgr_hrf_fit`, so
+the delay chosen for each voxel was discarded and could only be recovered by
+instrumenting `knee_pt`. It is now appended, and the slices that consume `beta_hrf` drop
+two trailing rows instead of one. This also fixes a separate bug in the GUI, where the
+FIR branch passed `beta_hrf` through untouched and therefore treated the regression
+intercept as part of the HRF.
 
 # rsHRF 1.5.8
 ## 12th September, 2021
