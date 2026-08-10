@@ -182,4 +182,5 @@ def wgr_FIR_estimation_HRF(u, dat, para, N):
     if ind == np.amax(Cov_E.shape) - 1:
         ind = ind - 1
     rsH = hrf[:, ind + 1]
+    rsH = np.append(rsH, lag[ind + 1])
     return rsH, u

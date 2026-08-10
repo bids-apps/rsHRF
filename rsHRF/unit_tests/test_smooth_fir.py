@@ -406,7 +406,9 @@ def test_wgr_FIR_estimation_HRF():
     out1, out2 = output
     assert type(out1) == type(np.asarray([]))
     assert type(out2) == type(np.asarray([]))
-    assert np.allclose(out1, np.zeros((13)))
+    # the HRF and its intercept, then the selected lag appended last
+    assert np.allclose(out1[:-1], np.zeros((13)))
+    assert out1[-1] in para["lag"]
     out2_exp = np.array(
         [
             0.82657439,

@@ -330,7 +330,7 @@ class Core:
                 beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(
                     bold_sig, para, [], -1
                 )
-                hrfa = beta_hrf
+                hrfa = beta_hrf[:-2, :]
             else:
                 # estimate HRF for the fourier / hanning / gamma / cannon basis functions
                 bf = basis_functions.basis_functions.get_basis_function(

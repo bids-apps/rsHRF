@@ -131,7 +131,7 @@ def demo_rsHRF(
         beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(
             bold_sig, para, temporal_mask, p_jobs
         )
-        hrfa = beta_hrf[:-1, :]
+        hrfa = beta_hrf[:-2, :]
     else:
         bf = basis_functions.basis_functions.get_basis_function(bold_sig.shape, para)
         beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(
