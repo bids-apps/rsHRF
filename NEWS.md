@@ -46,6 +46,13 @@ instrumenting `knee_pt`. It is now appended, and the slices that consume `beta_h
 two trailing rows instead of one. This also fixes a separate bug in the GUI, where the
 FIR branch passed `beta_hrf` through untouched and therefore treated the regression
 intercept as part of the HRF.
+* `[Fixed]` The non-Wiener branch of `process_voxel_deconv` returned the raw output of
+  `np.fft.ifft`, which is complex, so assigning it into the real `data_deconv` array
+  discarded the imaginary part implicitly and raised a `ComplexWarning` on every run. The
+  signal and the HRF are both real, so the filtered spectrum is Hermitian and the inverse
+  transform is real up to floating-point error — the numerical output is unchanged. The
+  branch now returns `np.real(...)`, matching the Wiener branch and MATLAB, which takes
+  `real()` at every `ifft`.
 
 # rsHRF 1.5.8
 ## 12th September, 2021

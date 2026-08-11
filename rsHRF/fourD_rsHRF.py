@@ -163,8 +163,10 @@ def demo_rsHRF(
                 np.append(hrf, np.zeros((nobs_val - max(hrf.shape), 1))), axis=0
             )
             M = np.fft.fft(sig_deconv[:, voxel_id])
-            return np.fft.ifft(
-                H.conj() * M / (H * H.conj() + 0.1 * np.mean((H * H.conj())))
+            return np.real(
+                np.fft.ifft(
+                    H.conj() * M / (H * H.conj() + 0.1 * np.mean((H * H.conj())))
+                )
             )
         else:
             deconv_mode = p_para.get("deconv_mode", "rest")
