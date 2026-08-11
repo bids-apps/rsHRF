@@ -53,6 +53,13 @@ intercept as part of the HRF.
   transform is real up to floating-point error — the numerical output is unchanged. The
   branch now returns `np.real(...)`, matching the Wiener branch and MATLAB, which takes
   `real()` at every `ifft`.
+* `[Fixed]` The GUI applied the FIR/sFIR microtime correction to a local dictionary but
+  stored the uncorrected `Parameters` object on the HRF, so every later consumer read
+  `T = 3` for an HRF that was estimated at `T = 1`. `deconvolveHRF` therefore resampled an
+  HRF that was already at TR resolution by a further factor of `T`, and `getHRFParameters`
+  computed response height, time-to-peak and FWHM against a `dt` three times too small.
+  The corrected parameters now travel with the HRF, which fixes both consumers. The shared
+  parameter form is left untouched, so switching back to a basis set still uses `T = 3`.
 
 # rsHRF 1.5.8
 ## 12th September, 2021
