@@ -40,17 +40,17 @@ def demo_rsHRF(
     # for four-dimensional input
     if mode != "time-series":
         if mode == "bids" or mode == "bids w/ atlas":
-            name = input_file.split("/")[-1].split(".")[0]
+            name = os.path.basename(input_file).split(".")[0]
             v1 = spm_dep.spm.spm_vol(input_file)
         else:
-            name = input_file.split("/")[-1].split(".")[0]
+            name = os.path.basename(input_file).split(".")[0]
             v1 = spm_dep.spm.spm_vol(input_file)
         if mask_file != None:
             if mode == "bids":
-                mask_name = mask_file.split("/")[-1].split(".")[0]
+                mask_name = os.path.basename(mask_file).split(".")[0]
                 v = spm_dep.spm.spm_vol(mask_file)
             else:
-                mask_name = mask_file.split("/")[-1].split(".")[0]
+                mask_name = os.path.basename(mask_file).split(".")[0]
                 v = spm_dep.spm.spm_vol(mask_file)
             if file_type == ".nii" or file_type == ".nii.gz":
                 brain = spm_dep.spm.spm_read_vols(v)
@@ -81,7 +81,9 @@ def demo_rsHRF(
             print("No atlas provided! Generating mask file...")
             if file_type == ".nii" or file_type == ".nii.gz":
                 data = v1.get_fdata()
-                brain = np.nanvar(data.reshape(-1, data.shape[3]), -1, ddof=0)
+                brain = np.nanvar(
+                    data.reshape(-1, data.shape[3], order="F"), -1, ddof=0
+                )
             else:
                 data = v1.agg_data()
                 brain = np.nanvar(data, -1, ddof=0)
@@ -93,7 +95,7 @@ def demo_rsHRF(
         bold_sig = stats.zscore(data1[:, voxel_ind], ddof=1)
     # for time-series input
     else:
-        name = input_file.split("/")[-1].split(".")[0]
+        name = os.path.basename(input_file).split(".")[0]
         data1 = np.loadtxt(input_file, delimiter=",")
         if data1.ndim == 1:
             data1 = np.expand_dims(data1, axis=1)
@@ -125,11 +127,11 @@ def demo_rsHRF(
     # Estimate HRF for the fourier / hanning / gamma / cannon basis functions
     if para["estimation"] == "sFIR" or para["estimation"] == "FIR":
         # Estimate HRF for FIR and sFIR
-        para["T"] = 1
+        utils.hrf_estimation.apply_fir_microtime_grid(para)
         beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(
             bold_sig, para, temporal_mask, p_jobs
         )
-        hrfa = beta_hrf[:-1, :]
+        hrfa = beta_hrf[:-2, :]
     else:
         bf = basis_functions.basis_functions.get_basis_function(bold_sig.shape, para)
         beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(
@@ -170,8 +172,8 @@ def demo_rsHRF(
                 sig_deconv[:, voxel_id],
                 hrf,
                 TR=p_para["TR"],
-                MaxIter=p_para.get("deconv_MaxIter", 50),
-                Tol=p_para.get("deconv_Tol", 1e-4),
+                MaxIter=p_para.get("deconv_maxiter", 50),
+                Tol=p_para.get("deconv_tol", 1e-4),
                 Mode=deconv_mode,
             )
 
@@ -247,7 +249,7 @@ def demo_rsHRF(
         pos += 1
 
     event_plot = lil_matrix((1, nobs))
-    if event_bold.size:
+    if pos < hrfa_TR.shape[1] and event_bold[pos].size:
         event_plot[:, event_bold[pos]] = 1
     else:
         print("No Events Detected!")

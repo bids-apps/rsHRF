@@ -8,7 +8,7 @@ def wgr_get_parameters(hdrf, dt):
     """
     Find Model Parameters
     h - Height
-    p - Time to peak (in units of dt where dt = TR/para.T)
+    p - Time to peak (in units of dt where dt = para["TR"] / para["T"])
     w - Width at half-peak
     """
     param = np.zeros((3, 1))
@@ -32,7 +32,7 @@ def wgr_get_parameters(hdrf, dt):
         g = hdrf[1:] - hdrf[0:-1]
 
         while cnt > 0 and np.abs(g[cnt]) < 0.001:
-            h = hdrf[cnt - 1]
+            h = hdrf[cnt]
             p = cnt
             cnt = cnt - 1
 

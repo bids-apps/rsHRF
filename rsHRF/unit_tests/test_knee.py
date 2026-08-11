@@ -34,3 +34,20 @@ def test_knee_pt():
     out1, out2 = knee.knee_pt(y)
     assert out1 == 6
     assert out2 == 0
+
+
+def test_knee_pt_returns_sentinel_on_bad_input():
+    """
+    knee_pt_helper returns a nan sentinel on bad input. The wrapper used to pass
+    that sentinel straight into an index expression, which raised a confusing
+    ValueError / IndexError / TypeError depending on the input. MATLAB's knee_pt
+    raises error() here instead.
+    """
+    # knee cannot be selected on the following;
+    # An empty array, a 2D array (must be 1D), a generic python list.
+    test_list = [np.array([]), np.zeros((3, 3)), [1, 2, 3]]
+    for test in test_list:
+        out1, out2 = knee.knee_pt(test)
+        assert np.isnan(out1) and np.isnan(
+            out2
+        ), f"knee.knee_pt did not return (nan,nan) for the (res_x, idx) input pair: {out1, out2}"

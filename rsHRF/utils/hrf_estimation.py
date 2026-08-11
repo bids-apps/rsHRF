@@ -13,6 +13,37 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
+
+def apply_fir_microtime_grid(para):
+    """
+    sFIR/FIR cannot use a time grid finer than TR,
+    thus we fix micro-time resolution factor to (T=1), this function makes sure
+    lag is computed accurately depending on dt and T
+    dt= TR / T
+    lag is in units of dt
+    """
+    para["T"] = 1
+    para["dt"] = para["TR"] / para["T"]
+    para["lag"] = np.arange(
+        np.trunc(para["min_onset_search"] / para["dt"]),
+        np.trunc(para["max_onset_search"] / para["dt"]) + 1,
+        dtype=int,
+    )
+
+
+def apply_localK_default(para):
+    """
+    wgr_BOLD_event_vector uses k as the local peak width, localK's default value is None
+    and if it stays as None, raises a TypeError in range(1+k, ...) line. CLI derives
+    localK from TR during runtime. This function gathers the logic in one place.
+    """
+    if "localK" not in para or para["localK"] is None:
+        if para["TR"] <= 2:
+            para["localK"] = 1
+        else:
+            para["localK"] = 2
+
+
 """
 HRF ESTIMATION
 """
@@ -44,12 +75,14 @@ def estimate_hrf(bold_sig, i, para, N, bf=None):
     localK = para["localK"]
     if para["estimation"] == "sFIR" or para["estimation"] == "FIR":
         # Estimate HRF for the sFIR or FIR basis functions
-        thr = np.array([para["thr"], np.inf])  # Thr is a vector for (s)FIR
+        thr = np.append(
+            np.atleast_1d(para["thr"]), np.inf
+        )  # the CLI gives a scalar, the GUI a list
         u = wgr_BOLD_event_vector(N, dat, thr, localK, para["temporal_mask"])
         u = u.toarray().flatten("C").ravel().nonzero()[0]
         beta_hrf, event_bold = sFIR.smooth_fir.wgr_FIR_estimation_HRF(u, dat, para, N)
     else:
-        thr = [para["thr"]]  # Thr is a scalar for the basis functions
+        thr = np.atleast_1d(para["thr"])  # the CLI gives a scalar, the GUI a list
         u0 = wgr_BOLD_event_vector(N, dat, thr, localK, para["temporal_mask"])
         u = np.append(u0.toarray(), np.zeros((para["T"] - 1, N)), axis=0)
         u = np.reshape(u, (1, -1), order="F")
@@ -131,17 +164,14 @@ def wgr_BOLD_event_vector(N, matrix, thr, k, temporal_mask):
             ):
                 data[0, t - 1] = 1
     else:
-        tmp = temporal_mask
-        for i in range(len(temporal_mask)):
-            if tmp[i] == 1:
-                temporal_mask[i] = i
-        datm = np.mean(matrix[temporal_mask])
-        datstd = np.std(matrix[temporal_mask])
+        keep = np.asarray(temporal_mask, dtype=bool)
+        datm = np.mean(matrix[keep])
+        datstd = np.std(matrix[keep])
         if datstd == 0:
             datstd = 1
         matrix = (matrix - datm) / datstd
         for t in range(1 + k, N - k + 1):
-            if tmp[t - 1]:
+            if keep[t - 1]:
                 if (
                     matrix[t - 1, 0] > thr[0]
                     and np.all(matrix[t - k - 1 : t - 1, 0] < matrix[t - 1, 0])

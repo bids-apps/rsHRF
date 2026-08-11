@@ -6,6 +6,6 @@ with open(op.join(op.dirname(op.realpath(__file__)), "VERSION"), "r") as fh:
     __version__ = fh.read().strip("\n")
 
 __packagename__ = "rsHRF"
-__url__ = "https://github.com/BIDSapps/rsHRF"
+__url__ = "https://github.com/BIDS-Apps/rsHRF"
 
 DOWNLOAD_URL = "https://github.com/BIDS-Apps/{name}/".format(name=__packagename__)

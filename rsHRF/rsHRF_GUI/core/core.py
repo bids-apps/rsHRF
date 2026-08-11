@@ -156,8 +156,8 @@ class Core:
                 all_prefix_match = False
                 prefix_match_count = 0
                 for i in range(len(all_inputs)):
-                    input_prefix = all_inputs[i].split("/")[-1].split("_desc")[0]
-                    mask_prefix = all_masks[i].split("/")[-1].split("_desc")[0]
+                    input_prefix = os.path.basename(all_inputs[i]).split("_desc")[0]
+                    mask_prefix = os.path.basename(all_masks[i]).split("_desc")[0]
 
                     if input_prefix == mask_prefix:
                         prefix_match_count += 1
@@ -204,7 +204,7 @@ class Core:
             mask_file = mask_file
         # getting the subject index
         try:
-            subject_index = input_file.split("/")[-1].split("_")[0][4:]
+            subject_index = os.path.basename(input_file).split("_")[0][4:]
         except:
             return Status(False, error="Input file should begin with 'sub-'")
         # obtaining the header for the mask
@@ -232,7 +232,7 @@ class Core:
             and v1.header.get_data_shape()[:-1] != v.header.get_data_shape()
         ) or (
             (file_type == ".gii" or file_type == ".gii.gz")
-            and v.agg_data().shape[0] != v.agg_data().shape[0]
+            and v1.agg_data().shape[0] != v.agg_data().shape[0]
         ):
             return Status(
                 False,
@@ -323,12 +323,14 @@ class Core:
                 self.parameters.get_passband_deconvolve(),
             )
             para = self.parameters.get_parameters()
+            utils.hrf_estimation.apply_localK_default(para)
             if para["estimation"] == "sFIR" or para["estimation"] == "FIR":
+                utils.hrf_estimation.apply_fir_microtime_grid(para)
                 # estimate HRF for FIR and sFIR
                 beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(
                     bold_sig, para, [], -1
                 )
-                hrfa = beta_hrf
+                hrfa = beta_hrf[:-2, :]
             else:
                 # estimate HRF for the fourier / hanning / gamma / cannon basis functions
                 bf = basis_functions.basis_functions.get_basis_function(

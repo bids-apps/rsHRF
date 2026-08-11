@@ -1,5 +1,4 @@
 import numpy as np
-import numpy.matlib
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -14,7 +13,7 @@ def rest_IdealFilter(x, TR, Bands, m=5000):
         else:
             ind_X = [j for j in range((i - 1) * m, nvar)]
         x1 = x[:, ind_X]
-        x1 = conn_filter(TR, Bands, x1) + np.matlib.repmat(np.mean(x1), x1.shape[0], 1)
+        x1 = conn_filter(TR, Bands, x1) + np.mean(x1, axis=0, keepdims=True)
         x[:, ind_X] = x1
     return x
 

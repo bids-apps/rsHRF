@@ -57,4 +57,8 @@ default_parameters["lag"] = np.arange(
     dtype="int",
 )
 
+default_parameters["deconv_maxiter"] = 50
+default_parameters["deconv_tol"] = 1e-4
+default_parameters["deconv_mode"] = "rest"
+
 available_estimations = ["canon2dd", "sFIR", "FIR", "fourier", "hanning", "gamma"]

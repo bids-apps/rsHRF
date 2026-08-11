@@ -159,6 +159,31 @@ def get_parser():
     )
 
     group_para.add_argument(
+        "--deconv-maxiter",
+        type=int,
+        default=default_parameters["deconv_maxiter"],
+        help=("The upper limit for the deconvolution iterations."),
+    )
+    group_para.add_argument(
+        "--deconv-tol",
+        type=float,
+        default=default_parameters["deconv_tol"],
+        help=(
+            "Convergence tolerance. Iteration stops once the relative difference between two successive estimates falls below this value. Default: 1e-4"
+        ),
+    )
+    group_para.add_argument(
+        "--deconv-mode",
+        choices=["rest", "task"],
+        default=default_parameters["deconv_mode"],
+        help=(
+            'Preset for the deconvolution defaults, either "rest" or "task". It only '
+            "selects the smoothing width and low-pass cutoff: rest uses a wider kernel "
+            "and a lower cutoff, task a narrower kernel and a higher one. Default: rest."
+        ),
+    )
+
+    group_para.add_argument(
         "--passband-deconvolve",
         action="store",
         type=float,
@@ -448,11 +473,7 @@ def run_rsHRF():
                 dtype="int",
             )
 
-            if "localK" not in para or para["localK"] == None:
-                if para["TR"] <= 2:
-                    para["localK"] = 1
-                else:
-                    para["localK"] = 2
+            utils.hrf_estimation.apply_localK_default(para)
 
             if input_type == "text":
                 file_type = op.splitext(args.bids_dir)[-1]
@@ -628,8 +649,8 @@ def run_rsHRF():
 
                 prefix_match_count = 0
                 for i in range(len(all_inputs)):
-                    input_prefix = all_inputs[i].split("/")[-1].split("_desc")[0]
-                    mask_prefix = all_masks[i].split("/")[-1].split("_desc")[0]
+                    input_prefix = op.basename(all_inputs[i]).split("_desc")[0]
+                    mask_prefix = op.basename(all_masks[i]).split("_desc")[0]
                     if input_prefix == mask_prefix:
                         prefix_match_count += 1
                     else:
@@ -673,11 +694,7 @@ def run_rsHRF():
                     dtype="int",
                 )
 
-                if "localK" not in para or para["localK"] == None:
-                    if para["TR"] <= 2:
-                        para["localK"] = 1
-                    else:
-                        para["localK"] = 2
+                utils.hrf_estimation.apply_localK_default(para)
 
                 num_errors += 1
                 try:
@@ -695,7 +712,7 @@ def run_rsHRF():
                     num_errors -= 1
                 except ValueError as err:
                     print(err.args[0])
-                except:
+                except Exception:
                     print("Unexpected error:", sys.exc_info()[0])
             success = len(all_inputs) - num_errors
             if success == 0:
