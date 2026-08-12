@@ -65,6 +65,11 @@ intercept as part of the HRF.
   participant label like `sub-bold01`, or a parent directory named `bold` returned a path
   fragment instead of an extension, so the file fell through to the GIfTI branch and was
   counted as an error. It now splits on the last occurrence.
+* `[Fixed]` `__all__` in `rsHRF/__init__.py` listed `"fourD_rsHRF.py"` and `"CLI.py"` with
+  their file extensions, so `from rsHRF import *` raised `AttributeError`; `__all__` takes
+  module names, not filenames. `utils`, `basis_functions` and `iterative_wiener_deconv` are
+  now imported explicitly as well, because they were only reachable as a side effect of other
+  modules importing them, so `__all__` would have broken again if those imports changed.
 
 # rsHRF 1.5.8
 ## 12th September, 2021
