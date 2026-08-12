@@ -60,6 +60,11 @@ intercept as part of the HRF.
   computed response height, time-to-peak and FWHM against a `dt` three times too small.
   The corrected parameters now travel with the HRF, which fixes both consumers. The shared
   parameter form is left untouched, so switching back to a basis set still uses `T = 3`.
+* `[Fixed]` The BIDS loop extracted the file extension with `split("bold")[1]`, which takes
+  the text after the *first* occurrence of "bold". Any path with an earlier "bold", for example a
+  participant label like `sub-bold01`, or a parent directory named `bold` returned a path
+  fragment instead of an extension, so the file fell through to the GIfTI branch and was
+  counted as an error. It now splits on the last occurrence.
 
 # rsHRF 1.5.8
 ## 12th September, 2021

@@ -853,3 +853,34 @@ def test_temporal_mask_accepts_valid_formats(monkeypatch, tmp_path):
             )
             CLI.run_rsHRF()
             mock_call.assert_called_once()
+
+
+def test_BIDS_bold_in_subject_label(monkeypatch, tmp_path):
+    """A participant label containing "bold" must not break extension parsing."""
+    ds = fake_BIDS_dataset(
+        tmp_path,
+        ["bold01"],
+        {"DataType": "derivative"},
+        {
+            "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
+            "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
+                {"TaskName": "Rest", "RepetitionTime": 2}
+            ),
+        },
+    )
+    with mock.patch("rsHRF.fourD_rsHRF.demo_rsHRF") as mock_call:
+        with pytest.warns(Warning):
+            monkeypatch.setattr(
+                sys,
+                "argv",
+                [
+                    "rsHRF",
+                    str(ds / "derivatives" / "fmriprep"),
+                    str(ds / "derivatives" / "rsHRF"),
+                    "participant",
+                    "--TR",
+                    "2",
+                ],
+            )
+            CLI.run_rsHRF()
+            mock_call.assert_called_once()

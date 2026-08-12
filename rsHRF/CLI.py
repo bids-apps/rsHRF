@@ -667,7 +667,7 @@ def run_rsHRF():
 
             num_errors = 0
             for file_count in range(len(all_inputs)):
-                file_type = all_inputs[file_count].split("bold")[1]
+                file_type = all_inputs[file_count].rsplit("bold", 1)[-1]
                 if file_type == ".nii" or file_type == ".nii.gz":
                     try:
                         TR = layout.get_metadata(all_inputs[file_count])[
