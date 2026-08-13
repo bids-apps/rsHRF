@@ -76,6 +76,9 @@ intercept as part of the HRF.
   to the data store instead of returning "Time series already exists", and recomputed the
   per-voxel deconvolution. `TR` and the deconvolution passband were also read from the form
   rather than the HRF. All four now come from the HRF, so the lookup and the stored key match.
+* `[Changed]` CI now uses the up-to-date `cimg/python:3.9` image. The legacy `circleci/*`
+  convenience images were retired at the end of 2021 and CircleCI raises a deprecation
+  warning for them; the Python version is unchanged.
 
 # rsHRF 1.5.8
 ## 12th September, 2021
