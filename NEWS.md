@@ -70,6 +70,12 @@ intercept as part of the HRF.
   module names, not filenames. `utils`, `basis_functions` and `iterative_wiener_deconv` are
   now imported explicitly as well, because they were only reachable as a side effect of other
   modules importing them, so `__all__` would have broken again if those imports changed.
+* `[Fixed]` `deconvolveHRF` looked its cache entry up with the shared parameter form but
+  stored it with the HRF's own parameters, so once the two diverged the check never matched.
+  Since `add_BOLD_deconv` appends, deconvolving the same HRF twice added a duplicate entry
+  to the data store instead of returning "Time series already exists", and recomputed the
+  per-voxel deconvolution. `TR` and the deconvolution passband were also read from the form
+  rather than the HRF. All four now come from the HRF, so the lookup and the stored key match.
 
 # rsHRF 1.5.8
 ## 12th September, 2021

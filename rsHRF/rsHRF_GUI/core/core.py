@@ -427,16 +427,17 @@ class Core:
         subject = self.dataStore.get_subject_by_index(
             subject_index
         )  # gets the subject from the index
-        para = hrf.get_parameters().get_parameters()
+        hrf_para = hrf.get_parameters()
+        para = hrf_para.get_parameters()
         # if the HRF has already been retrieved for this particular set of inputs
-        if not subject.is_present("Deconvolved-BOLD", (self.parameters, hrf)):
+        if not subject.is_present("Deconvolved-BOLD", (hrf_para, hrf)):
             # inputs for retrieving the deconvolved BOLD
             hrfa = hrf.get_ts()
             bold_sig = hrf.get_associated_BOLD().get_ts()
             bold_sig = processing.rest_filter.rest_IdealFilter(
                 bold_sig,
-                self.parameters.get_TR(),
-                self.parameters.get_passband_deconvolve(),
+                hrf_para.get_TR(s),
+                hrf_para.get_passband_deconvolve(),
             )
             event_bold = hrf.get_event_bold()
             nvar = hrfa.shape[1]
