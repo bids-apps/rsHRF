@@ -79,6 +79,14 @@ intercept as part of the HRF.
 * `[Changed]` CI now uses the up-to-date `cimg/python:3.9` image. The legacy `circleci/*`
   convenience images were retired at the end of 2021 and CircleCI raises a deprecation
   warning for them; the Python version is unchanged.
+* `[Changed]` The expected numerical warnings in `knee_pt_helper` and `spm_hrf` are now
+  covered by `np.errstate` instead of being emitted on every call. In `knee_pt_helper` the
+  first element of `det` is always zero, because a line cannot be fitted through the single
+  point of the first cumulative sum, and that element is never read. In `spm_hrf` the
+  logarithm receives a negative argument when the onset is shifted to build the time
+  derivative, which `np.nan_to_num` already handles. Together these accounted for four
+  warnings per voxel, so a real run emitted hundreds of thousands of them once the blanket
+  suppression is removed. The `knee_pt` flat-curve warning is deliberately left in place.
 
 # rsHRF 1.5.8
 ## 12th September, 2021

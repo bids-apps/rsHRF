@@ -92,7 +92,9 @@ def spm_hrf(RT, P=None, fMRI_T=16):
     # modelled hemodynamic response function - {mixture of Gammas}
     dt = RT / float(fMRI_T)
     u = np.arange(0, int(p[6] / dt + 1)) - p[5] / dt
-    with np.errstate(divide="ignore"):  # Known division-by-zero
+    # Known division-by-zero and a negative value for logarithm's argument is invalid.
+    # Negative value occurs when onset is shifted for the time derivative.
+    with np.errstate(divide="ignore", invalid="ignore"):
         hrf = (
             _spm_Gpdf(u, p[0] / p[2], dt / p[2])
             - _spm_Gpdf(u, p[1] / p[3], dt / p[3]) / p[4]
