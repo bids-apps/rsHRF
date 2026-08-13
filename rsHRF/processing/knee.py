@@ -57,10 +57,16 @@ def knee_pt_helper(y, x=None):
             sigma_xx = np.cumsum(np.multiply(x, x), axis=0)
             n = np.arange(1, np.amax(y.shape) + 1).conj().T
             det = np.multiply(n, sigma_xx) - np.multiply(sigma_x, sigma_x)
-            mfwd = (np.multiply(n, sigma_xy) - np.multiply(sigma_x, sigma_y)) / det
-            bfwd = -1 * (
-                (np.multiply(sigma_x, sigma_xy) - np.multiply(sigma_xx, sigma_y)) / det
-            )
+            # det[0] is always 0 because there is only one
+            # point in the first step of cumulative summation and a line cannot pass through
+            # single point. It is safe to silence the warning because det[0] is never read,
+            # as the error_curve loop starts from index 1.
+            with np.errstate(divide="ignore", invalid="ignore"):
+                mfwd = (np.multiply(n, sigma_xy) - np.multiply(sigma_x, sigma_y)) / det
+                bfwd = -1 * (
+                    (np.multiply(sigma_x, sigma_xy) - np.multiply(sigma_xx, sigma_y))
+                    / det
+                )
 
             sigma_xy = np.cumsum(np.multiply(x[::-1], y[::-1]), axis=0)
             sigma_x = np.cumsum(x[::-1], axis=0)
@@ -68,16 +74,21 @@ def knee_pt_helper(y, x=None):
             sigma_xx = np.cumsum(np.multiply(x[::-1], x[::-1]), axis=0)
             n = np.arange(1, np.amax(y.shape) + 1).conj().T
             det = np.multiply(n, sigma_xx) - np.multiply(sigma_x, sigma_x)
-            mbck = ((np.multiply(n, sigma_xy) - np.multiply(sigma_x, sigma_y)) / det)[
-                ::-1
-            ]
-            bbck = (
-                -1
-                * (
-                    (np.multiply(sigma_x, sigma_xy) - np.multiply(sigma_xx, sigma_y))
-                    / det
-                )
-            )[::-1]
+            # same reason as above
+            with np.errstate(divide="ignore", invalid="ignore"):
+                mbck = (
+                    (np.multiply(n, sigma_xy) - np.multiply(sigma_x, sigma_y)) / det
+                )[::-1]
+                bbck = (
+                    -1
+                    * (
+                        (
+                            np.multiply(sigma_x, sigma_xy)
+                            - np.multiply(sigma_xx, sigma_y)
+                        )
+                        / det
+                    )
+                )[::-1]
 
             error_curve = np.full(y.shape, np.nan)
             for breakpt in range(1, np.amax((y - 1).shape)):
