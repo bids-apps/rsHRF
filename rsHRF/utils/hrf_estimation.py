@@ -9,10 +9,6 @@ from joblib import Parallel, delayed
 from rsHRF import processing, sFIR
 from ..processing import knee
 
-import warnings
-
-warnings.filterwarnings("ignore")
-
 
 def apply_fir_microtime_grid(para):
     """

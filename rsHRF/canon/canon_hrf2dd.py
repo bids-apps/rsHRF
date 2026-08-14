@@ -1,10 +1,6 @@
 import numpy as np
 from ..spm_dep import spm
 
-import warnings
-
-warnings.filterwarnings("ignore")
-
 
 def wgr_spm_get_canonhrf(xBF):
     dt = xBF["dt"]

@@ -3,10 +3,6 @@ import numpy as np
 import nibabel as nib
 from scipy.special import gammaln
 
-import warnings
-
-warnings.filterwarnings("ignore")
-
 
 def spm_vol(input_file):
     """

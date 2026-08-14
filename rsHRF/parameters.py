@@ -1,8 +1,6 @@
 import numpy as np
 import warnings
 
-warnings.filterwarnings("ignore")
-
 
 def wgr_get_parameters(hdrf, dt):
     """

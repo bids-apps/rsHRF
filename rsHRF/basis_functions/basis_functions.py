@@ -3,10 +3,6 @@ import numpy as np
 from scipy.stats import gamma
 from rsHRF import canon, spm_dep, sFIR
 
-import warnings
-
-warnings.filterwarnings("ignore")
-
 """
 BASIS FUNCTION COMPUTATION
 """

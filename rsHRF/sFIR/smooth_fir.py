@@ -2,10 +2,6 @@ import numpy as np
 from scipy import linalg
 from ..processing import knee
 
-import warnings
-
-warnings.filterwarnings("ignore")
-
 
 def wgr_regress(y, X):
     n, ncolX = X.shape

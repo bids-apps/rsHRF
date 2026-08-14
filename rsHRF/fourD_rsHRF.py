@@ -18,9 +18,6 @@ from rsHRF import (
     iterative_wiener_deconv,
 )
 from joblib import Parallel, delayed
-import warnings
-
-warnings.filterwarnings("ignore")
 
 
 def demo_rsHRF(

@@ -1,7 +1,4 @@
 import numpy as np
-import warnings
-
-warnings.filterwarnings("ignore")
 
 
 def knee_pt(y):
