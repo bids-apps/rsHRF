@@ -87,7 +87,15 @@ intercept as part of the HRF.
   derivative, which `np.nan_to_num` already handles. Together these accounted for four
   warnings per voxel, so a real run emitted hundreds of thousands of them once the blanket
   suppression is removed. The `knee_pt` flat-curve warning is deliberately left in place.
-
+* `[Fixed]` A supplied mask that is looser than the data let voxels with a flat time course
+  into the analysis, the case reported in #29, where an earlier preprocessing step had
+  masked more tightly than rsHRF does. Those voxels carry no signal, and dividing by their
+  all-zero HRF wrote `nan` into the deconvolved output, while the parameter maps were
+  already zero for them. `voxel_ind` now requires non-zero temporal variance as well as mask
+  membership, which is what the generated-mask branch has always done. Measured on synthetic
+  data: the `nan` count in the deconvolved output goes from 3660 to 0, and every value for
+  voxels that carry signal is unchanged.
+  
 # rsHRF 1.5.8
 ## 12th September, 2021
 * `[Fixed]` Fixed bugs for rest_filter (was only estimating the first 5000 voxels.)
