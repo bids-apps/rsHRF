@@ -101,7 +101,8 @@ intercept as part of the HRF.
   ones in `knee_pt_helper` and `spm_hrf` are now covered by `np.errstate`, and voxels with a
   flat time course no longer enter the analysis.What remains visible is 
   deliberate: the "Empty or zero time course" warning, the flat-curve warning in `knee_pt`, 
-  and warnings from dependencies.
+  and warnings from dependencies. Voxels excluded for having a flat time course are now reported 
+  once per run, with a count and the likely cause, instead of warning per voxel.
 
 # rsHRF 1.5.8
 ## 12th September, 2021
