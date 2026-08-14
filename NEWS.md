@@ -95,7 +95,7 @@ intercept as part of the HRF.
   membership, which is what the generated-mask branch has always done. Measured on synthetic
   data: the `nan` count in the deconvolved output goes from 3660 to 0, and every value for
   voxels that carry signal is unchanged.
-  
+
 # rsHRF 1.5.8
 ## 12th September, 2021
 * `[Fixed]` Fixed bugs for rest_filter (was only estimating the first 5000 voxels.)
