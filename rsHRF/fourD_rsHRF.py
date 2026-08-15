@@ -20,8 +20,6 @@ from rsHRF import (
 from joblib import Parallel, delayed
 import warnings
 
-warnings.filterwarnings("ignore")
-
 
 def demo_rsHRF(
     input_file,
@@ -96,6 +94,15 @@ def demo_rsHRF(
             np.reshape(data, (-1, data.shape[-1]), order="F"), -1, ddof=0
         )
         voxel_ind = np.where((brain > 0) & (temporal_variance > 0))[0]
+        dead_voxels = int(np.sum((brain > 0) & (temporal_variance == 0)))
+        if dead_voxels > 0:
+            warnings.warn(
+                f"{dead_voxels} of {int(np.sum(brain > 0))} voxels in the mask have a "
+                "flat time course and were excluded; the mask is probably looser "
+                "than the data it was applied to.",
+                RuntimeWarning,
+            )
+
         mask_shape = data.shape[:-1]
         nobs = data.shape[-1]
         data1 = np.reshape(data, (-1, nobs), order="F").T

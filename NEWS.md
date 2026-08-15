@@ -95,6 +95,14 @@ intercept as part of the HRF.
   membership, which is what the generated-mask branch has always done. Measured on synthetic
   data: the `nan` count in the deconvolved output goes from 3660 to 0, and every value for
   voxels that carry signal is unchanged.
+* `[Changed]` Removed the blanket `warnings.filterwarnings("ignore")` from all ten modules
+  that set it, and the `-p no:warnings` flag from the CI test run -the policy asked about
+  in #29-. The warnings that this exposed were dealt with at the source first: the structural
+  ones in `knee_pt_helper` and `spm_hrf` are now covered by `np.errstate`, and voxels with a
+  flat time course no longer enter the analysis.What remains visible is
+  deliberate: the "Empty or zero time course" warning, the flat-curve warning in `knee_pt`,
+  and warnings from dependencies. Voxels excluded for having a flat time course are now reported
+  once per run, with a count and the likely cause, instead of warning per voxel.
 
 # rsHRF 1.5.8
 ## 12th September, 2021

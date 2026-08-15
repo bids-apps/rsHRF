@@ -1,7 +1,4 @@
 import numpy as np
-import warnings
-
-warnings.filterwarnings("ignore")
 
 
 def rest_IdealFilter(x, TR, Bands, m=5000):
