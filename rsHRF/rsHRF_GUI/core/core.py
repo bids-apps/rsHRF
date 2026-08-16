@@ -1,4 +1,5 @@
 import os
+import copy
 import numpy as np
 import nibabel as nib
 import scipy.io as sio
@@ -15,10 +16,6 @@ from ..datatypes.misc.parameters import Parameters
 from ..datatypes.misc.subject import Subject
 from ..datatypes.misc.store import Store
 from ..misc.status import Status
-
-import warnings
-
-warnings.filterwarnings("ignore")
 
 
 class Core:
@@ -326,6 +323,8 @@ class Core:
             utils.hrf_estimation.apply_localK_default(para)
             if para["estimation"] == "sFIR" or para["estimation"] == "FIR":
                 utils.hrf_estimation.apply_fir_microtime_grid(para)
+                run_para = copy.deepcopy(self.parameters)
+                run_para.set_T(1)
                 # estimate HRF for FIR and sFIR
                 beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(
                     bold_sig, para, [], -1
@@ -333,6 +332,7 @@ class Core:
                 hrfa = beta_hrf[:-2, :]
             else:
                 # estimate HRF for the fourier / hanning / gamma / cannon basis functions
+                run_para = self.parameters
                 bf = basis_functions.basis_functions.get_basis_function(
                     bold_sig.shape, para
                 )  # obtaining the basis set
@@ -341,9 +341,7 @@ class Core:
                 )
                 hrfa = np.dot(bf, beta_hrf[np.arange(0, bf.shape[1]), :])
             # instantiating the time-series objects
-            hrf = HRF(
-                label="HRF", ts=hrfa, subject_index=subject_index, para=self.parameters
-            )
+            hrf = HRF(label="HRF", ts=hrfa, subject_index=subject_index, para=run_para)
             # the HRF is associated to a particular Preprocessed BOLD Time-series
             hrf.set_BOLD(bold_pre_ts)
             hrf.set_event_bold(event_bold)  # setting the bold-events
@@ -417,7 +415,7 @@ class Core:
     def deconvolveHRF(self, hrf):
         """
         Retrieves the Deconvolved BOLD Time-series
-        with HRF as input, and self.parameters as the parameters
+        with HRF as input, and hrf.parameters as the parameters
         """
         subject_index = (
             hrf.get_subject_index()
@@ -425,16 +423,17 @@ class Core:
         subject = self.dataStore.get_subject_by_index(
             subject_index
         )  # gets the subject from the index
-        para = self.parameters.get_parameters()
+        hrf_para = hrf.get_parameters()
+        para = hrf_para.get_parameters()
         # if the HRF has already been retrieved for this particular set of inputs
-        if not subject.is_present("Deconvolved-BOLD", (self.parameters, hrf)):
+        if not subject.is_present("Deconvolved-BOLD", (hrf_para, hrf)):
             # inputs for retrieving the deconvolved BOLD
             hrfa = hrf.get_ts()
             bold_sig = hrf.get_associated_BOLD().get_ts()
             bold_sig = processing.rest_filter.rest_IdealFilter(
                 bold_sig,
-                self.parameters.get_TR(),
-                self.parameters.get_passband_deconvolve(),
+                hrf_para.get_TR(s),
+                hrf_para.get_passband_deconvolve(),
             )
             event_bold = hrf.get_event_bold()
             nvar = hrfa.shape[1]

@@ -46,6 +46,63 @@ instrumenting `knee_pt`. It is now appended, and the slices that consume `beta_h
 two trailing rows instead of one. This also fixes a separate bug in the GUI, where the
 FIR branch passed `beta_hrf` through untouched and therefore treated the regression
 intercept as part of the HRF.
+* `[Fixed]` The non-Wiener branch of `process_voxel_deconv` returned the raw output of
+  `np.fft.ifft`, which is complex, so assigning it into the real `data_deconv` array
+  discarded the imaginary part implicitly and raised a `ComplexWarning` on every run. The
+  signal and the HRF are both real, so the filtered spectrum is Hermitian and the inverse
+  transform is real up to floating-point error — the numerical output is unchanged. The
+  branch now returns `np.real(...)`, matching the Wiener branch and MATLAB, which takes
+  `real()` at every `ifft`.
+* `[Fixed]` The GUI applied the FIR/sFIR microtime correction to a local dictionary but
+  stored the uncorrected `Parameters` object on the HRF, so every later consumer read
+  `T = 3` for an HRF that was estimated at `T = 1`. `deconvolveHRF` therefore resampled an
+  HRF that was already at TR resolution by a further factor of `T`, and `getHRFParameters`
+  computed response height, time-to-peak and FWHM against a `dt` three times too small.
+  The corrected parameters now travel with the HRF, which fixes both consumers. The shared
+  parameter form is left untouched, so switching back to a basis set still uses `T = 3`.
+* `[Fixed]` The BIDS loop extracted the file extension with `split("bold")[1]`, which takes
+  the text after the *first* occurrence of "bold". Any path with an earlier "bold", for example a
+  participant label like `sub-bold01`, or a parent directory named `bold` returned a path
+  fragment instead of an extension, so the file fell through to the GIfTI branch and was
+  counted as an error. It now splits on the last occurrence.
+* `[Fixed]` `__all__` in `rsHRF/__init__.py` listed `"fourD_rsHRF.py"` and `"CLI.py"` with
+  their file extensions, so `from rsHRF import *` raised `AttributeError`; `__all__` takes
+  module names, not filenames. `utils`, `basis_functions` and `iterative_wiener_deconv` are
+  now imported explicitly as well, because they were only reachable as a side effect of other
+  modules importing them, so `__all__` would have broken again if those imports changed.
+* `[Fixed]` `deconvolveHRF` looked its cache entry up with the shared parameter form but
+  stored it with the HRF's own parameters, so once the two diverged the check never matched.
+  Since `add_BOLD_deconv` appends, deconvolving the same HRF twice added a duplicate entry
+  to the data store instead of returning "Time series already exists", and recomputed the
+  per-voxel deconvolution. `TR` and the deconvolution passband were also read from the form
+  rather than the HRF. All four now come from the HRF, so the lookup and the stored key match.
+* `[Changed]` CI now uses the up-to-date `cimg/python:3.9` image. The legacy `circleci/*`
+  convenience images were retired at the end of 2021 and CircleCI raises a deprecation
+  warning for them; the Python version is unchanged.
+* `[Changed]` The expected numerical warnings in `knee_pt_helper` and `spm_hrf` are now
+  covered by `np.errstate` instead of being emitted on every call. In `knee_pt_helper` the
+  first element of `det` is always zero, because a line cannot be fitted through the single
+  point of the first cumulative sum, and that element is never read. In `spm_hrf` the
+  logarithm receives a negative argument when the onset is shifted to build the time
+  derivative, which `np.nan_to_num` already handles. Together these accounted for four
+  warnings per voxel, so a real run emitted hundreds of thousands of them once the blanket
+  suppression is removed. The `knee_pt` flat-curve warning is deliberately left in place.
+* `[Fixed]` A supplied mask that is looser than the data let voxels with a flat time course
+  into the analysis, the case reported in #29, where an earlier preprocessing step had
+  masked more tightly than rsHRF does. Those voxels carry no signal, and dividing by their
+  all-zero HRF wrote `nan` into the deconvolved output, while the parameter maps were
+  already zero for them. `voxel_ind` now requires non-zero temporal variance as well as mask
+  membership, which is what the generated-mask branch has always done. Measured on synthetic
+  data: the `nan` count in the deconvolved output goes from 3660 to 0, and every value for
+  voxels that carry signal is unchanged.
+* `[Changed]` Removed the blanket `warnings.filterwarnings("ignore")` from all ten modules
+  that set it, and the `-p no:warnings` flag from the CI test run -the policy asked about
+  in #29-. The warnings that this exposed were dealt with at the source first: the structural
+  ones in `knee_pt_helper` and `spm_hrf` are now covered by `np.errstate`, and voxels with a
+  flat time course no longer enter the analysis.What remains visible is
+  deliberate: the "Empty or zero time course" warning, the flat-curve warning in `knee_pt`,
+  and warnings from dependencies. Voxels excluded for having a flat time course are now reported
+  once per run, with a count and the likely cause, instead of warning per voxel.
 
 # rsHRF 1.5.8
 ## 12th September, 2021

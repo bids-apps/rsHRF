@@ -20,8 +20,6 @@ from rsHRF import (
 from joblib import Parallel, delayed
 import warnings
 
-warnings.filterwarnings("ignore")
-
 
 def demo_rsHRF(
     input_file,
@@ -88,7 +86,23 @@ def demo_rsHRF(
                 data = v1.agg_data()
                 brain = np.nanvar(data, -1, ddof=0)
             print("Done")
-        voxel_ind = np.where(brain > 0)[0]
+
+        # A supplied mask can be looser than the data it is applied to, letting
+        # voxels with a flat time course into the analysis. They carry no signal,
+        # and dividing by their all-zero HRF writes nan into the deconvolved map.
+        temporal_variance = np.nanvar(
+            np.reshape(data, (-1, data.shape[-1]), order="F"), -1, ddof=0
+        )
+        voxel_ind = np.where((brain > 0) & (temporal_variance > 0))[0]
+        dead_voxels = int(np.sum((brain > 0) & (temporal_variance == 0)))
+        if dead_voxels > 0:
+            warnings.warn(
+                f"{dead_voxels} of {int(np.sum(brain > 0))} voxels in the mask have a "
+                "flat time course and were excluded; the mask is probably looser "
+                "than the data it was applied to.",
+                RuntimeWarning,
+            )
+
         mask_shape = data.shape[:-1]
         nobs = data.shape[-1]
         data1 = np.reshape(data, (-1, nobs), order="F").T
@@ -163,8 +177,10 @@ def demo_rsHRF(
                 np.append(hrf, np.zeros((nobs_val - max(hrf.shape), 1))), axis=0
             )
             M = np.fft.fft(sig_deconv[:, voxel_id])
-            return np.fft.ifft(
-                H.conj() * M / (H * H.conj() + 0.1 * np.mean((H * H.conj())))
+            return np.real(
+                np.fft.ifft(
+                    H.conj() * M / (H * H.conj() + 0.1 * np.mean((H * H.conj())))
+                )
             )
         else:
             deconv_mode = p_para.get("deconv_mode", "rest")
