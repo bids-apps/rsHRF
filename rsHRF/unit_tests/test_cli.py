@@ -403,7 +403,7 @@ def test_BIDS(monkeypatch, tmp_path):
     ds = fake_BIDS_dataset(
         tmp_path,
         ["01"],
-        {"DataType": "derivative"},
+        {"DatasetType": "derivative"},
         {
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
@@ -433,7 +433,7 @@ def test_BIDS_failedComp(monkeypatch, tmp_path):
     ds = fake_BIDS_dataset(
         tmp_path,
         ["01"],
-        {"DataType": "derivative"},
+        {"DatasetType": "derivative"},
         {
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
@@ -479,7 +479,7 @@ def test_BIDS_TR(monkeypatch, tmp_path):
     ds = fake_BIDS_dataset(
         tmp_path,
         ["01"],
-        {"DataType": "derivative"},
+        {"DatasetType": "derivative"},
         {
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
@@ -508,7 +508,7 @@ def test_BIDS_nonDerivative(monkeypatch, tmp_path):
     ds = fake_BIDS_dataset(
         tmp_path,
         ["01"],
-        {"DataType": "original"},
+        {"DatasetType": "original"},
         {
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
@@ -587,7 +587,7 @@ def test_BIDS_participantLabels(monkeypatch, tmp_path):
     ds = fake_BIDS_dataset(
         tmp_path,
         ["01"],
-        {"DataType": "derivative"},
+        {"DatasetType": "derivative"},
         {
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
@@ -630,7 +630,7 @@ def test_BIDS_mask(monkeypatch, tmp_path):
     ds = fake_BIDS_dataset(
         tmp_path,
         ["01"],
-        {"DataType": "derivative"},
+        {"DatasetType": "derivative"},
         {
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
@@ -683,7 +683,7 @@ def test_BIDS_mask_bad(monkeypatch, tmp_path):
     ds = fake_BIDS_dataset(
         tmp_path,
         ["01"],
-        {"DataType": "derivative"},
+        {"DatasetType": "derivative"},
         {
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
@@ -756,7 +756,7 @@ def test_BIDS_filters(monkeypatch, tmp_path):
     ds = fake_BIDS_dataset(
         tmp_path,
         ["01"],
-        {"DataType": "derivative"},
+        {"DatasetType": "derivative"},
         {
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
