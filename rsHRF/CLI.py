@@ -522,18 +522,24 @@ def run_rsHRF():
             if fname.exists():
                 desc = json.loads(Path(fname).read_text())
                 if "DatasetType" in desc:
-                    if desc["DatasetType"] != "derivative":
-                        parser.error(
-                            "Input data is not a derivative dataset"
-                            ' (DatasetType in dataset_description.json is not equal to "derivative")'
-                        )
-
+                    data_type = desc["DatasetType"]
+                elif "DataType" in desc:
+                    warnings.warn(
+                        "DataType field is an old fMRIPrep naming convention please use 'DatasetType'",
+                        category=RuntimeWarning,
+                    )
+                    data_type = desc["DataType"]
                 else:
                     parser.error(
                         "DatasetType is not defined in the dataset_description.json file. Please make sure DatasetType is defined. "
                         "Information on the dataset_description.json file can be found online "
                         "(https://bids-specification.readthedocs.io/en/stable/03-modality-agnostic-files.html"
                         "#derived-dataset-and-pipeline-description)"
+                    )
+                if data_type != "derivative":
+                    parser.error(
+                        "Input data is not a derivative dataset"
+                        ' (DatasetType in dataset_description.json is not equal to "derivative")'
                     )
             else:
                 parser.error(

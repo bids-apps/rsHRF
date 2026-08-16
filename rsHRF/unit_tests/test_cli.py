@@ -884,3 +884,34 @@ def test_BIDS_bold_in_subject_label(monkeypatch, tmp_path):
             )
             CLI.run_rsHRF()
             mock_call.assert_called_once()
+
+
+def test_BIDS_accepts_legacy_DataType(monkeypatch, tmp_path):
+    """An old fMRIPrep derivative that writes DataType is still accepted."""
+    ds = fake_BIDS_dataset(
+        tmp_path,
+        ["01"],
+        {"DataType": "derivative"},
+        {
+            "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
+            "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
+                {"TaskName": "Rest", "RepetitionTime": 2}
+            ),
+        },
+    )
+    with mock.patch("rsHRF.fourD_rsHRF.demo_rsHRF") as mock_call:
+        with pytest.warns(RuntimeWarning, match="DataType"):
+            monkeypatch.setattr(
+                sys,
+                "argv",
+                [
+                    "rsHRF",
+                    str(ds / "derivatives" / "fmriprep"),
+                    str(ds / "derivatives" / "rsHRF"),
+                    "participant",
+                    "--TR",
+                    "2",
+                ],
+            )
+            CLI.run_rsHRF()
+            mock_call.assert_called_once()
