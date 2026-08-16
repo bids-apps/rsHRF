@@ -103,6 +103,10 @@ intercept as part of the HRF.
   deliberate: the "Empty or zero time course" warning, the flat-curve warning in `knee_pt`,
   and warnings from dependencies. Voxels excluded for having a flat time course are now reported
   once per run, with a count and the likely cause, instead of warning per voxel.
+* `[Fixed]` The BIDS input check required `DataType` in `dataset_description.json`, but the
+  BIDS key is `DatasetType`, which is also what `utils/bids.py` writes — so rsHRF rejected
+  spec-compliant derivative datasets, including its own output. Fixed by @anaharrismatnez in
+  #52; the test fixtures were writing the same wrong key, which is why this went unnoticed.
 
 # rsHRF 1.5.8
 ## 12th September, 2021

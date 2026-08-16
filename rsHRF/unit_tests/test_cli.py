@@ -860,7 +860,7 @@ def test_BIDS_bold_in_subject_label(monkeypatch, tmp_path):
     ds = fake_BIDS_dataset(
         tmp_path,
         ["bold01"],
-        {"DataType": "derivative"},
+        {"DatasetType": "derivative"},
         {
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
