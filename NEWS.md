@@ -110,6 +110,11 @@ intercept as part of the HRF.
   `DataType` is still accepted with a warning, since it is the convention older fMRIPrep
   versions wrote and real derivatives in use still carry it; the dataset the integration
   test runs on is one of them.
+* `[Fixed]` The text-input path had no equivalent of `voxel_ind`, so a constant column was
+  analysed like any other: it warned four times per column and wrote `nan` into
+  `data_deconv`. Constant columns are now excluded, reported once per run with a count, and
+  the saved arrays are expanded back to the input width so the columns still line up with
+  the input file.
 
 # rsHRF 1.5.8
 ## 12th September, 2021
