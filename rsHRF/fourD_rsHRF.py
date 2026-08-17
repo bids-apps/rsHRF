@@ -114,8 +114,18 @@ def demo_rsHRF(
         if data1.ndim == 1:
             data1 = np.expand_dims(data1, axis=1)
         nobs = data1.shape[0]
-        bold_sig = stats.zscore(data1, ddof=1)
+        orig_col_num = data1.shape[1]
+        col_var = np.nanvar(data1, axis=0, ddof=0)
+        voxel_ind = np.where(col_var > 0)[0]
+        bold_sig = stats.zscore(data1[:, voxel_ind], ddof=1)
 
+        discarded = int(np.sum(col_var == 0))
+        if discarded > 0:
+            warnings.warn(
+                f"{discarded} of {orig_col_num} columns in the input file "
+                "are constant and were excluded.",
+                RuntimeWarning,
+            )
     if len(temporal_mask) > 0 and len(temporal_mask) != nobs:
         raise ValueError(
             "Inconsistency in temporal_mask dimensions.\n"
@@ -223,8 +233,26 @@ def demo_rsHRF(
     dic = {"para": para, "hrfa": hrfa, "event_bold": event_bold, "PARA": PARA}
     ext = "_hrf.mat"
     if mode == "time-series":
-        dic["event_number"] = event_number
-        dic["data_deconv"] = data_deconv
+        hrfa_full = np.zeros([hrfa.shape[0], orig_col_num])
+        PARA_full = np.zeros([3, orig_col_num])
+        data_deconv_full = np.zeros([nobs, orig_col_num])
+        event_number_full = np.zeros([1, orig_col_num])
+        event_bold_full = np.empty(orig_col_num, dtype=object)
+
+        hrfa_full[:, voxel_ind] = hrfa
+        PARA_full[:, voxel_ind] = PARA
+        data_deconv_full[:, voxel_ind] = data_deconv
+        event_number_full[:, voxel_ind] = event_number
+        for i in range(orig_col_num):
+            event_bold_full[i] = np.array([], dtype=int)
+        for i, idx in enumerate(voxel_ind):
+            event_bold_full[idx] = event_bold[i]
+
+        dic["hrfa"] = hrfa_full
+        dic["PARA"] = PARA_full
+        dic["data_deconv"] = data_deconv_full
+        dic["event_number"] = event_number_full
+        dic["event_bold"] = event_bold_full
         ext = "_hrf_deconv.mat"
 
     name = name.rsplit("_bold", 1)[0]
