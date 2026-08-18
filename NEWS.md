@@ -115,6 +115,12 @@ intercept as part of the HRF.
   `data_deconv`. Constant columns are now excluded, reported once per run with a count, and
   the saved arrays are expanded back to the input width so the columns still line up with
   the input file.
+* `[Changed]` `estimate_hrf` appended `np.inf` to `thr` in the FIR/sFIR branch, but only
+  `thr[0]` was read. Both that and the docstring of `wgr_BOLD_event_vector`, which
+  described an `event < 3.1` upper bound, trace back to a line that is commented out in
+  MATLAB's `rsHRF_find_event_vector.m`. The upper bound was never implemented in Python;
+  the docstring now outlines what the function does, which is to detect local peaks above
+  the threshold, the same condition MATLAB implements.
 
 # rsHRF 1.5.8
 ## 12th September, 2021

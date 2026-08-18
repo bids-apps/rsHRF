@@ -71,9 +71,7 @@ def estimate_hrf(bold_sig, i, para, N, bf=None):
     localK = para["localK"]
     if para["estimation"] == "sFIR" or para["estimation"] == "FIR":
         # Estimate HRF for the sFIR or FIR basis functions
-        thr = np.append(
-            np.atleast_1d(para["thr"]), np.inf
-        )  # the CLI gives a scalar, the GUI a list
+        thr = np.atleast_1d(para["thr"])  # the CLI gives a scalar, the GUI a list
         u = wgr_BOLD_event_vector(N, dat, thr, localK, para["temporal_mask"])
         u = u.toarray().flatten("C").ravel().nonzero()[0]
         beta_hrf, event_bold = sFIR.smooth_fir.wgr_FIR_estimation_HRF(u, dat, para, N)
@@ -144,8 +142,11 @@ def wgr_hrf_fit(dat, xBF, u, bf):
 
 def wgr_BOLD_event_vector(N, matrix, thr, k, temporal_mask):
     """
-    Detect BOLD event.
-    event > thr & event < 3.1
+    Signal at a timepoint is counted as an event
+    when the following conditions are met:
+    Signal exceeds the threshold thr[0] and it is greater
+    than its k-neighbours on both two sides.
+    i.e. it is a local peak exceeding the threshold.
     """
     data = lil_matrix((1, N))
     matrix = matrix[:, np.newaxis]
