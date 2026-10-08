@@ -3,7 +3,7 @@ numpy
 nibabel
 scipy
 matplotlib
-pybids==0.11.1
+pybids>"0.11.0, <0.21.0"
 pandas
 patsy
 joblib

@@ -3,16 +3,18 @@ import numpy as np
 import os.path as op
 import json
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
+import bids
 from bids.layout import BIDSLayout
 from bids.config import set_option
 from pathlib import Path
 from rsHRF import spm_dep, fourD_rsHRF, utils
-
+from packaging.version import Version
 
 import warnings
 from .utils.default_parameters import default_parameters, available_estimations
 
-set_option("extension_initial_dot", True)
+if Version(bids.__version__) < Version("0.14"):
+    set_option("extension_initial_dot", True)
 
 with open(op.join(op.dirname(op.realpath(__file__)), "VERSION"), "r") as fh:
     __version__ = fh.read().strip("\n")
