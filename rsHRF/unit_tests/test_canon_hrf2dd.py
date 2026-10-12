@@ -5,7 +5,7 @@ from ..processing import knee
 from ..canon import canon_hrf2dd
 
 
-def test_wgr_spm_get_canonhrf():
+def test_spm_get_canonhrf():
     xBF = {}
     xBF["dt"] = 2.0 / 3
     xBF["T"] = 3
@@ -134,18 +134,18 @@ def test_wgr_spm_get_canonhrf():
         ]
     )
     xBF["TD_DD"] = 0
-    out = canon_hrf2dd.wgr_spm_get_canonhrf(xBF)
+    out = canon_hrf2dd.spm_get_canonhrf(xBF)
     assert type(out) == type(np.asarray([]))
     assert out.shape == (37, 1)
     assert np.allclose(out[:, 0], col1)
     xBF["TD_DD"] = 1
-    out = canon_hrf2dd.wgr_spm_get_canonhrf(xBF)
+    out = canon_hrf2dd.spm_get_canonhrf(xBF)
     assert type(out) == type(np.asarray([]))
     assert out.shape == (37, 2)
     assert np.allclose(out[:, 0], col1)
     assert np.allclose(out[:, 1], col2)
     xBF["TD_DD"] = 2
-    out = canon_hrf2dd.wgr_spm_get_canonhrf(xBF)
+    out = canon_hrf2dd.spm_get_canonhrf(xBF)
     assert type(out) == type(np.asarray([]))
     assert out.shape == (37, 3)
     assert np.allclose(out[:, 0], col1)

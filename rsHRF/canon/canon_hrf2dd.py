@@ -2,7 +2,7 @@ import numpy as np
 from ..spm_dep import spm
 
 
-def wgr_spm_get_canonhrf(xBF):
+def spm_get_canonhrf(xBF):
     dt = xBF["dt"]
     fMRI_T = xBF["T"]
     p = np.array([6, 16, 1, 1, 6, 0, 32], dtype=float)

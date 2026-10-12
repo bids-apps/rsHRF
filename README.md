@@ -48,6 +48,9 @@ https://bids-apps.neuroimaging.io/rsHRF/
 - Asier Erramuzpe (Python - BIDS)
 - Amogh Johri   (Python - BIDS)
 
+- Demir Ege Ortaç (Python)
+- Giulio Tani Raffaelli (Python)
+
 ## Docker Usage
 
 You can run rsHRF as a containerized BIDS App using Docker. This avoids the need to install Python dependencies locally and ensures reproducibility.

@@ -3,7 +3,10 @@ from scipy import linalg
 from ..processing import knee
 
 
-def wgr_regress(y, X):
+def regress(y, X):
+    """
+    This function was originally written by Guo-Rong Wu, the output of this function MUST coincide with the one in function wgr_regress in rsHRF_estimation_FIR.m which is a "copy from function [b,bint,r,rint,stats] = regress(y,X,alpha)"
+    """
     n, ncolX = X.shape
     Q, R, perm = linalg.qr(X, mode="economic", pivoting=True)
     if R.ndim == 0:
@@ -35,7 +38,7 @@ def wgr_regress(y, X):
     return b
 
 
-def wgr_glsco(X, Y, sMRI=[], AR_lag=0, max_iter=20):
+def glsco(X, Y, sMRI=[], AR_lag=0, max_iter=20):
     """
     Linear regression when disturbance terms follow AR(p)
     -----------------------------------
@@ -54,10 +57,13 @@ def wgr_glsco(X, Y, sMRI=[], AR_lag=0, max_iter=20):
     -----------------------------------
     Returns:
     Beta = estimator corresponding to the k regressors
+
+    This function was originally written by Guo-Rong Wu, the output of this function MUST coincide with the one in function wgr_glsco_sm in rsHRF_estimation_FIR.m.
     """
+
     nobs, nvar = X.shape
     if isinstance(sMRI, list) and len(sMRI) == 0:
-        Beta = wgr_regress(Y, X)
+        Beta = regress(Y, X)
     else:
         sMRI = np.array(sMRI)
         try:
@@ -75,14 +81,14 @@ def wgr_glsco(X, Y, sMRI=[], AR_lag=0, max_iter=20):
         for m in range(AR_lag):
             X_AR[:, m] = resid[AR_lag - m - 1 : nobs - AR_lag - m - 1]
         Y_AR = resid[AR_lag : nobs - AR_lag]
-        AR_para = wgr_regress(Y_AR, X_AR)
+        AR_para = regress(Y_AR, X_AR)
         X_main = X[AR_lag:nobs, :]
         Y_main = Y[AR_lag:nobs]
         for m in range(AR_lag):
             X_main = X_main - (AR_para[m] * (X[AR_lag - m - 1 : nobs - m - 1, :]))
             Y_main = Y_main - (AR_para[m] * (Y[AR_lag - m - 1 : nobs - m - 1]))
         if isinstance(sMRI, list) and len(sMRI) == 0:
-            Beta = wgr_regress(Y_main, X_main)
+            Beta = regress(Y_main, X_main)
         else:
             try:
                 Beta = linalg.solve(
@@ -137,7 +143,7 @@ def Fit_sFIR2(output, length, TR, input, T, flag_sfir, AR_lag):
             resid = output - np.matmul(X, hrf)
             res_sum = np.cov(resid)
         else:
-            res_sum, hrf = wgr_glsco(X, output, AR_lag=AR_lag, sMRI=sMRI)
+            res_sum, hrf = glsco(X, output, AR_lag=AR_lag, sMRI=sMRI)
     else:
         if AR_lag == 0:
             hrf = linalg.lstsq(X, output)
@@ -145,11 +151,14 @@ def Fit_sFIR2(output, length, TR, input, T, flag_sfir, AR_lag):
             resid = output - np.matmul(X, hrf)
             res_sum = np.cov(resid)
         else:
-            res_sum, hrf = wgr_glsco(X, output, AR_lag=AR_lag)
+            res_sum, hrf = glsco(X, output, AR_lag=AR_lag)
     return hrf, res_sum
 
 
-def wgr_FIR_estimation_HRF(u, dat, para, N):
+def FIR_estimation_HRF(u, dat, para, N):
+    """
+    This function was originally written by Guo-Rong Wu, the output of this function MUST coincide with the one in function wgr_FIR_estimation_HRF in rsHRF_estimation_FIR.m.
+    """
     if para["estimation"] == "sFIR":
         firmode = 1
     else:

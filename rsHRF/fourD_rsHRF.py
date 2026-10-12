@@ -167,7 +167,7 @@ def demo_rsHRF(
     PARA = np.zeros((3, nvar))
     for voxel_id in range(nvar):
         hrf1 = hrfa[:, voxel_id]
-        PARA[:, voxel_id] = parameters.wgr_get_parameters(hrf1, para["TR"] / para["T"])
+        PARA[:, voxel_id] = parameters.get_parameters(hrf1, para["TR"] / para["T"])
 
     print("Done")
     print("Deconvolving HRF ...")

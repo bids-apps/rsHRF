@@ -82,7 +82,7 @@ def test_event_vector_uses_only_kept_frames_for_scaling():
     N = len(_SIG)
     expected = [8, 11, 14]
 
-    events = hrf_estimation.wgr_BOLD_event_vector(N, _SIG, [1], 1, tm)
+    events = hrf_estimation.BOLD_event_vector(N, _SIG, [1], 1, tm)
     events = events.toarray().ravel().nonzero()[0]
     masked_out = [i for i in events if tm[i] != 1]
 
@@ -104,7 +104,7 @@ def test_temporal_mask_is_not_modified():
     N = len(_SIG)
     tm = list(_MASK)
     tm_before = list(tm)
-    hrf_estimation.wgr_BOLD_event_vector(N, _SIG, [1], 1, tm)
+    hrf_estimation.BOLD_event_vector(N, _SIG, [1], 1, tm)
 
     assert (
         tm_before == tm
