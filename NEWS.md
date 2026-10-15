@@ -121,6 +121,11 @@ intercept as part of the HRF.
   MATLAB's `rsHRF_find_event_vector.m`. The upper bound was never implemented in Python;
   the docstring now outlines what the function does, which is to detect local peaks above
   the threshold, the same condition MATLAB implements.
+* `[Fixed]` In the BIDS branch, `write_derivative_description` ran prior to the initialization
+  of the output directory. Consequently, a non-existent `--output_dir` caused `FileNotFoundError`.
+  Output directory is now initialized right after the argument verification in `CLI.py`
+  including nested file paths. It was not spotted, because both the CI integration test
+  and unit test fixture create the output directory before the testing.
 
 # rsHRF 1.5.8
 ## 12th September, 2021

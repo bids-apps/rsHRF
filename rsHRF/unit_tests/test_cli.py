@@ -915,3 +915,38 @@ def test_BIDS_accepts_legacy_DataType(monkeypatch, tmp_path):
             )
             CLI.run_rsHRF()
             mock_call.assert_called_once()
+
+
+def test_BIDS_creates_missing_output_dir(monkeypatch, tmp_path):
+    """In every other test, fixtures create the output directory before the testing.
+    Consequently, missing output directory initialization was never tested.
+    This test function tests whether the output directory is created if it's missing."""
+    ds = fake_BIDS_dataset(
+        tmp_path,
+        ["01"],
+        {"DatasetType": "derivative"},
+        {
+            "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
+            "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
+                {"TaskName": "Rest", "RepetitionTime": 2}
+            ),
+        },
+    )
+    out = tmp_path / "new" / "output"
+    with mock.patch("rsHRF.fourD_rsHRF.demo_rsHRF") as mock_call:
+        with pytest.warns(Warning):
+            monkeypatch.setattr(
+                sys,
+                "argv",
+                [
+                    "rsHRF",
+                    str(ds / "derivatives" / "fmriprep"),
+                    str(out),
+                    "participant",
+                    "--TR",
+                    "2",
+                ],
+            )
+            CLI.run_rsHRF()
+            mock_call.assert_called_once()
+            assert out.exists(), "Output directory was not created."
