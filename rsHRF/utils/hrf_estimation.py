@@ -72,26 +72,29 @@ def estimate_hrf(bold_sig, i, para, N, bf=None):
     if para["estimation"] == "sFIR" or para["estimation"] == "FIR":
         # Estimate HRF for the sFIR or FIR basis functions
         thr = np.atleast_1d(para["thr"])  # the CLI gives a scalar, the GUI a list
-        u = wgr_BOLD_event_vector(N, dat, thr, localK, para["temporal_mask"])
+        u = BOLD_event_vector(N, dat, thr, localK, para["temporal_mask"])
         u = u.toarray().flatten("C").ravel().nonzero()[0]
-        beta_hrf, event_bold = sFIR.smooth_fir.wgr_FIR_estimation_HRF(u, dat, para, N)
+        beta_hrf, event_bold = sFIR.smooth_fir.FIR_estimation_HRF(u, dat, para, N)
     else:
         thr = np.atleast_1d(para["thr"])  # the CLI gives a scalar, the GUI a list
-        u0 = wgr_BOLD_event_vector(N, dat, thr, localK, para["temporal_mask"])
+        u0 = BOLD_event_vector(N, dat, thr, localK, para["temporal_mask"])
         u = np.append(u0.toarray(), np.zeros((para["T"] - 1, N)), axis=0)
         u = np.reshape(u, (1, -1), order="F")
-        beta_hrf = wgr_hrf_fit(dat, para, u, bf)
+        beta_hrf = hrf_fit(dat, para, u, bf)
         u = u0.toarray()[0].nonzero()[0]
     return beta_hrf, u
 
 
-def wgr_onset_design(u, bf, T, T0, nscans):
+def onset_design(u, bf, T, T0, nscans):
     """
     @u - BOLD event vector (microtime).
     @bf - basis set matrix
     @T - microtime resolution (number of time bins per scan)
     @T0 - microtime onset (reference time bin, see slice timing)
+
+    This function was originally written by Guo-Rong Wu, the output of this function MUST coincide with the one in function wgr_onset_design in rsHRF_estimation_temporal_basis.m.
     """
+
     ind = np.arange(0, max(u.shape))
     X = np.empty((0, len(ind)))
     for p in range(bf.shape[1]):
@@ -106,22 +109,28 @@ def wgr_onset_design(u, bf, T, T0, nscans):
     return X
 
 
-def wgr_glm_estimation(dat, u, bf, T, T0, AR_lag):
+def glm_estimation(dat, u, bf, T, T0, AR_lag):
     """
     @u - BOLD event vector (microtime).
+
+    This function was originally written by Guo-Rong Wu, the output of this function MUST coincide with the one in function wgr_onset_design in rsHRF_estimation_temporal_basis.m.
     """
+
     nscans = dat.shape[0]
-    x = wgr_onset_design(u, bf, T, T0, nscans)
+    x = onset_design(u, bf, T, T0, nscans)
     X = np.append(x, np.ones((nscans, 1)), axis=1)
-    res_sum, Beta = sFIR.smooth_fir.wgr_glsco(X, dat, AR_lag=AR_lag)
+    res_sum, Beta = sFIR.smooth_fir.glsco(X, dat, AR_lag=AR_lag)
     return np.real(res_sum), Beta
 
 
-def wgr_hrf_fit(dat, xBF, u, bf):
+def hrf_fit(dat, xBF, u, bf):
     """
     @u    - BOLD event vector (microtime).
     @nlag - time lag from neural event to BOLD event
+
+    This function was originally written by Guo-Rong Wu, the output of this function MUST coincide with the one in function wgr_hrf_fit in rsHRF_estimation_temporal_basis.m.
     """
+
     lag = xBF["lag"]
     AR_lag = xBF["AR_lag"]
     nlag = len(lag)
@@ -129,7 +138,7 @@ def wgr_hrf_fit(dat, xBF, u, bf):
     beta = np.zeros((bf.shape[1] + 1, nlag))
     for i in range(nlag):
         u_lag = np.append(u[0, lag[i] :], np.zeros((1, lag[i]))).T
-        erm[0, i], beta[:, i] = wgr_glm_estimation(
+        erm[0, i], beta[:, i] = glm_estimation(
             dat, u_lag, bf, xBF["T"], xBF["T0"], AR_lag
         )
     x, idx = knee.knee_pt(np.ravel(erm))
@@ -140,14 +149,17 @@ def wgr_hrf_fit(dat, xBF, u, bf):
     return beta_hrf
 
 
-def wgr_BOLD_event_vector(N, matrix, thr, k, temporal_mask):
+def BOLD_event_vector(N, matrix, thr, k, temporal_mask):
     """
     Signal at a timepoint is counted as an event
     when the following conditions are met:
     Signal exceeds the threshold thr[0] and it is greater
     than its k-neighbours on both two sides.
     i.e. it is a local peak exceeding the threshold.
+
+    This function was originally written by Guo-Rong Wu, the output of this function MUST coincide with the one in rsHRF_find_event_vector.m.
     """
+
     data = lil_matrix((1, N))
     matrix = matrix[:, np.newaxis]
     matrix = np.nan_to_num(matrix)

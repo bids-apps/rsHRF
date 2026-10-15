@@ -392,9 +392,7 @@ class Core:
         # obtaining the parameters for each voxel
         for voxel_id in range(nvar):
             hrf1 = hrfa[:, voxel_id]
-            PARA[:, voxel_id] = parameters.wgr_get_parameters(
-                hrf1, para["TR"] / para["T"]
-            )
+            PARA[:, voxel_id] = parameters.get_parameters(hrf1, para["TR"] / para["T"])
             for i in range(3):
                 average[i] += PARA[i, voxel_id]
         for i in range(3):

@@ -2,13 +2,16 @@ import numpy as np
 import warnings
 
 
-def wgr_get_parameters(hdrf, dt):
+def get_parameters(hdrf, dt):
     """
     Find Model Parameters
     h - Height
     p - Time to peak (in units of dt where dt = para["TR"] / para["T"])
     w - Width at half-peak
+
+    This function was originally written by Guo-Rong Wu, the return values of this function MUST coincide with the one of rsHRF_get_HRF_parameters.m
     """
+
     param = np.zeros((3, 1))
 
     if np.any(hdrf):
