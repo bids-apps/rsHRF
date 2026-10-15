@@ -369,6 +369,8 @@ def run_rsHRF():
             parser.error(
                 "--output_dir is required when executing in command-line interface"
             )
+        output_dir = Path(args.output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
 
         if not op.exists(args.bids_dir):
             parser.error(
