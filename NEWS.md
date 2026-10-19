@@ -126,6 +126,13 @@ intercept as part of the HRF.
   Output directory is now initialized right after the argument verification in `CLI.py`
   including nested file paths. It was not spotted, because both the CI integration test
   and unit test fixture create the output directory before the testing.
+* `[Fixed]` The `pybids` version constraint in `requirements.txt` kept the shell quotes
+  (`pybids>"0.11.0, <0.21.0"`), which is not valid PEP 508. pip removed support for
+  legacy specifiers in 24.1, so `pip install -r requirements.txt` fails outright on any
+  newer pip. `setup.py` was already correct.
+* `[Fixed]` Two docstrings in `utils/hrf_estimation.py` were outdated by the `wgr_`
+  removal in #70. `apply_localK_default` used the old Python name, and `glm_estimation`
+  pointed at `wgr_onset_design` instead of `wgr_glm_estimation`.
 
 # rsHRF 1.5.8
 ## 12th September, 2021

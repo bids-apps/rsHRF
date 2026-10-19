@@ -29,7 +29,7 @@ def apply_fir_microtime_grid(para):
 
 def apply_localK_default(para):
     """
-    wgr_BOLD_event_vector uses k as the local peak width, localK's default value is None
+    BOLD_event_vector uses k as the local peak width, localK's default value is None
     and if it stays as None, raises a TypeError in range(1+k, ...) line. CLI derives
     localK from TR during runtime. This function gathers the logic in one place.
     """
@@ -113,7 +113,7 @@ def glm_estimation(dat, u, bf, T, T0, AR_lag):
     """
     @u - BOLD event vector (microtime).
 
-    This function was originally written by Guo-Rong Wu, the output of this function MUST coincide with the one in function wgr_onset_design in rsHRF_estimation_temporal_basis.m.
+    This function was originally written by Guo-Rong Wu, the output of this function MUST coincide with the one in function wgr_glm_estimation in rsHRF_estimation_temporal_basis.m.
     """
 
     nscans = dat.shape[0]
