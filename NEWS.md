@@ -1,4 +1,5 @@
-# Unreleased
+# rsHRF 1.8.0
+## 20th October, 2026
 
 * `[Fixed]` `write_derivative_description` raised `KeyError` when `RSHRF_DOCKER_TAG` was set, and wrote
   `"URI": null` when `RSHRF_SINGULARITY_URL` was set. Both branches now read the variable they gate on.
