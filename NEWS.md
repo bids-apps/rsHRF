@@ -133,6 +133,10 @@ intercept as part of the HRF.
 * `[Fixed]` Two docstrings in `utils/hrf_estimation.py` were outdated by the `wgr_`
   removal in #70. `apply_localK_default` used the old Python name, and `glm_estimation`
   pointed at `wgr_onset_design` instead of `wgr_glm_estimation`.
+* `[Changed]` The Docker section of the README pointed at `bids/rshrf:unstable` and called it
+  the development image. The release pipeline pushes `unstable`, `latest` and the version tag
+  from the same build, so `unstable` was never a development image. The README now uses
+  `latest` and notes that a version tag should be pinned for reproducible analyses.
 
 # rsHRF 1.5.8
 ## 12th September, 2021
