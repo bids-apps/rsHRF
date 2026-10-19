@@ -20,8 +20,6 @@ from rsHRF import (
 from joblib import Parallel, delayed
 import warnings
 
-warnings.filterwarnings("ignore")
-
 
 def demo_rsHRF(
     input_file,
@@ -40,17 +38,17 @@ def demo_rsHRF(
     # for four-dimensional input
     if mode != "time-series":
         if mode == "bids" or mode == "bids w/ atlas":
-            name = input_file.split("/")[-1].split(".")[0]
+            name = os.path.basename(input_file).split(".")[0]
             v1 = spm_dep.spm.spm_vol(input_file)
         else:
-            name = input_file.split("/")[-1].split(".")[0]
+            name = os.path.basename(input_file).split(".")[0]
             v1 = spm_dep.spm.spm_vol(input_file)
         if mask_file != None:
             if mode == "bids":
-                mask_name = mask_file.split("/")[-1].split(".")[0]
+                mask_name = os.path.basename(mask_file).split(".")[0]
                 v = spm_dep.spm.spm_vol(mask_file)
             else:
-                mask_name = mask_file.split("/")[-1].split(".")[0]
+                mask_name = os.path.basename(mask_file).split(".")[0]
                 v = spm_dep.spm.spm_vol(mask_file)
             if file_type == ".nii" or file_type == ".nii.gz":
                 brain = spm_dep.spm.spm_read_vols(v)
@@ -81,25 +79,53 @@ def demo_rsHRF(
             print("No atlas provided! Generating mask file...")
             if file_type == ".nii" or file_type == ".nii.gz":
                 data = v1.get_fdata()
-                brain = np.nanvar(data.reshape(-1, data.shape[3]), -1, ddof=0)
+                brain = np.nanvar(
+                    data.reshape(-1, data.shape[3], order="F"), -1, ddof=0
+                )
             else:
                 data = v1.agg_data()
                 brain = np.nanvar(data, -1, ddof=0)
             print("Done")
-        voxel_ind = np.where(brain > 0)[0]
+
+        # A supplied mask can be looser than the data it is applied to, letting
+        # voxels with a flat time course into the analysis. They carry no signal,
+        # and dividing by their all-zero HRF writes nan into the deconvolved map.
+        temporal_variance = np.nanvar(
+            np.reshape(data, (-1, data.shape[-1]), order="F"), -1, ddof=0
+        )
+        voxel_ind = np.where((brain > 0) & (temporal_variance > 0))[0]
+        dead_voxels = int(np.sum((brain > 0) & (temporal_variance == 0)))
+        if dead_voxels > 0:
+            warnings.warn(
+                f"{dead_voxels} of {int(np.sum(brain > 0))} voxels in the mask have a "
+                "flat time course and were excluded; the mask is probably looser "
+                "than the data it was applied to.",
+                RuntimeWarning,
+            )
+
         mask_shape = data.shape[:-1]
         nobs = data.shape[-1]
         data1 = np.reshape(data, (-1, nobs), order="F").T
         bold_sig = stats.zscore(data1[:, voxel_ind], ddof=1)
     # for time-series input
     else:
-        name = input_file.split("/")[-1].split(".")[0]
+        name = os.path.basename(input_file).split(".")[0]
         data1 = np.loadtxt(input_file, delimiter=",")
         if data1.ndim == 1:
             data1 = np.expand_dims(data1, axis=1)
         nobs = data1.shape[0]
-        bold_sig = stats.zscore(data1, ddof=1)
+        orig_col_num = data1.shape[1]
+        col_var = np.nanvar(data1, axis=0, ddof=0)
+        voxel_ind = np.where(col_var > 0)[0]
+        bold_sig = stats.zscore(data1[:, voxel_ind], ddof=1)
 
+        discarded = int(np.sum(col_var == 0))
+        if discarded > 0:
+            warnings.warn(
+                f"{discarded} of {orig_col_num} columns in the input file "
+                "are constant and were excluded.",
+                RuntimeWarning,
+            )
     if len(temporal_mask) > 0 and len(temporal_mask) != nobs:
         raise ValueError(
             "Inconsistency in temporal_mask dimensions.\n"
@@ -125,11 +151,11 @@ def demo_rsHRF(
     # Estimate HRF for the fourier / hanning / gamma / cannon basis functions
     if para["estimation"] == "sFIR" or para["estimation"] == "FIR":
         # Estimate HRF for FIR and sFIR
-        para["T"] = 1
+        utils.hrf_estimation.apply_fir_microtime_grid(para)
         beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(
             bold_sig, para, temporal_mask, p_jobs
         )
-        hrfa = beta_hrf[:-1, :]
+        hrfa = beta_hrf[:-2, :]
     else:
         bf = basis_functions.basis_functions.get_basis_function(bold_sig.shape, para)
         beta_hrf, event_bold = utils.hrf_estimation.compute_hrf(
@@ -141,7 +167,7 @@ def demo_rsHRF(
     PARA = np.zeros((3, nvar))
     for voxel_id in range(nvar):
         hrf1 = hrfa[:, voxel_id]
-        PARA[:, voxel_id] = parameters.wgr_get_parameters(hrf1, para["TR"] / para["T"])
+        PARA[:, voxel_id] = parameters.get_parameters(hrf1, para["TR"] / para["T"])
 
     print("Done")
     print("Deconvolving HRF ...")
@@ -161,8 +187,10 @@ def demo_rsHRF(
                 np.append(hrf, np.zeros((nobs_val - max(hrf.shape), 1))), axis=0
             )
             M = np.fft.fft(sig_deconv[:, voxel_id])
-            return np.fft.ifft(
-                H.conj() * M / (H * H.conj() + 0.1 * np.mean((H * H.conj())))
+            return np.real(
+                np.fft.ifft(
+                    H.conj() * M / (H * H.conj() + 0.1 * np.mean((H * H.conj())))
+                )
             )
         else:
             deconv_mode = p_para.get("deconv_mode", "rest")
@@ -170,8 +198,8 @@ def demo_rsHRF(
                 sig_deconv[:, voxel_id],
                 hrf,
                 TR=p_para["TR"],
-                MaxIter=p_para.get("deconv_MaxIter", 50),
-                Tol=p_para.get("deconv_Tol", 1e-4),
+                MaxIter=p_para.get("deconv_maxiter", 50),
+                Tol=p_para.get("deconv_tol", 1e-4),
                 Mode=deconv_mode,
             )
 
@@ -205,8 +233,26 @@ def demo_rsHRF(
     dic = {"para": para, "hrfa": hrfa, "event_bold": event_bold, "PARA": PARA}
     ext = "_hrf.mat"
     if mode == "time-series":
-        dic["event_number"] = event_number
-        dic["data_deconv"] = data_deconv
+        hrfa_full = np.zeros([hrfa.shape[0], orig_col_num])
+        PARA_full = np.zeros([3, orig_col_num])
+        data_deconv_full = np.zeros([nobs, orig_col_num])
+        event_number_full = np.zeros([1, orig_col_num])
+        event_bold_full = np.empty(orig_col_num, dtype=object)
+
+        hrfa_full[:, voxel_ind] = hrfa
+        PARA_full[:, voxel_ind] = PARA
+        data_deconv_full[:, voxel_ind] = data_deconv
+        event_number_full[:, voxel_ind] = event_number
+        for i in range(orig_col_num):
+            event_bold_full[i] = np.array([], dtype=int)
+        for i, idx in enumerate(voxel_ind):
+            event_bold_full[idx] = event_bold[i]
+
+        dic["hrfa"] = hrfa_full
+        dic["PARA"] = PARA_full
+        dic["data_deconv"] = data_deconv_full
+        dic["event_number"] = event_number_full
+        dic["event_bold"] = event_bold_full
         ext = "_hrf_deconv.mat"
 
     name = name.rsplit("_bold", 1)[0]
@@ -247,7 +293,7 @@ def demo_rsHRF(
         pos += 1
 
     event_plot = lil_matrix((1, nobs))
-    if event_bold.size:
+    if pos < hrfa_TR.shape[1] and event_bold[pos].size:
         event_plot[:, event_bold[pos]] = 1
     else:
         print("No Events Detected!")

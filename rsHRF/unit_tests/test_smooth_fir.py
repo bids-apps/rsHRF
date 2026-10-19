@@ -3,16 +3,16 @@ import numpy as np
 from ..sFIR import smooth_fir
 
 
-def test_wgr_regress():
+def test_regress():
     val1 = np.random.randint(1, 10)
     val2 = np.random.randint(11, 200)
     y = np.random.random((val2))
     X = np.random.random((val2, val1))
-    out = smooth_fir.wgr_regress(y, X)
+    out = smooth_fir.regress(y, X)
     assert type(out) == type(np.asarray([]))
     assert out.size == val1
     y = np.zeros((val2))
-    out = smooth_fir.wgr_regress(y, X)
+    out = smooth_fir.regress(y, X)
     assert np.allclose(np.zeros((val1)), out)
     X = np.asarray(
         [
@@ -128,11 +128,11 @@ def test_wgr_regress():
         ]
     )
     out_exp = np.asarray([0.0411757, 0.24767687, 0.42055364, 0.19608055])
-    out = smooth_fir.wgr_regress(y, X)
+    out = smooth_fir.regress(y, X)
     assert np.allclose(out, out_exp)
 
 
-def test_wgr_glsco():
+def test_glsco():
     val1 = np.random.randint(1, 10)
     val2 = np.random.randint(11, 200)
     Y = np.random.random((val2))
@@ -140,7 +140,7 @@ def test_wgr_glsco():
     sMRI = []
     AR_lag = 1
     max_iter = 20
-    out = smooth_fir.wgr_glsco(X, Y, sMRI=sMRI, AR_lag=AR_lag, max_iter=max_iter)
+    out = smooth_fir.glsco(X, Y, sMRI=sMRI, AR_lag=AR_lag, max_iter=max_iter)
     assert type(out) == type(())
     out1, out2 = out
     assert type(out1) == type(np.asarray([]))
@@ -225,7 +225,7 @@ def test_wgr_glsco():
             0.9656335840727327,
         ]
     )
-    out = smooth_fir.wgr_glsco(X, Y, sMRI=sMRI, AR_lag=AR_lag, max_iter=max_iter)
+    out = smooth_fir.glsco(X, Y, sMRI=sMRI, AR_lag=AR_lag, max_iter=max_iter)
     out1, out2 = out
     out1_exp = np.asarray([0.02611677])
     out2_exp = np.asarray([0.0367933, 0.51386258, -0.97340772, 1.26010343])
@@ -346,7 +346,7 @@ def test_Fit_sFIR2():
     assert np.allclose(out2_exp, out2)
 
 
-def test_wgr_FIR_estimation_HRF():
+def test_FIR_estimation_HRF():
     u = np.random.random((7))
     dat = np.random.random((152))
     para = {
@@ -370,7 +370,7 @@ def test_wgr_FIR_estimation_HRF():
         "lag": np.asarray([6, 7, 8, 9, 10, 11, 12]),
     }
     N = 152
-    output = smooth_fir.wgr_FIR_estimation_HRF(u, dat, para, N)
+    output = smooth_fir.FIR_estimation_HRF(u, dat, para, N)
     assert type(output) == type(())
     u = np.asarray(
         [
@@ -402,11 +402,13 @@ def test_wgr_FIR_estimation_HRF():
             0.6492800171038505,
         ]
     )
-    output = smooth_fir.wgr_FIR_estimation_HRF(u, dat, para, N)
+    output = smooth_fir.FIR_estimation_HRF(u, dat, para, N)
     out1, out2 = output
     assert type(out1) == type(np.asarray([]))
     assert type(out2) == type(np.asarray([]))
-    assert np.allclose(out1, np.zeros((13)))
+    # the HRF and its intercept, then the selected lag appended last
+    assert np.allclose(out1[:-1], np.zeros((13)))
+    assert out1[-1] in para["lag"]
     out2_exp = np.array(
         [
             0.82657439,
@@ -421,7 +423,7 @@ def test_wgr_FIR_estimation_HRF():
     assert np.allclose(out2_exp, out2)
 
 
-def test_wgr_glsco_falls_back_when_solve_hits_a_singular_matrix():
+def test_glsco_falls_back_when_solve_hits_a_singular_matrix():
     """The except branch assigned lstsq's 4-tuple, so the fallback raised ValueError."""
     # X.T @ X = [[14, 28], [28, 56]] -- determinant is exactly 0 in float arithmetic,
     # so linalg.solve raises LinAlgError deterministically rather than merely warning.
@@ -429,7 +431,7 @@ def test_wgr_glsco_falls_back_when_solve_hits_a_singular_matrix():
     Y = np.array([1.0, 0.0, -1.0])
     sMRI = np.zeros((2, 2))
 
-    res_sum, Beta = smooth_fir.wgr_glsco(X, Y, sMRI=sMRI, AR_lag=0)
+    res_sum, Beta = smooth_fir.glsco(X, Y, sMRI=sMRI, AR_lag=0)
 
     assert isinstance(Beta, np.ndarray)
     assert Beta.shape == (2,)
@@ -437,3 +439,53 @@ def test_wgr_glsco_falls_back_when_solve_hits_a_singular_matrix():
     # the defining property of a least-squares solution: residual orthogonal to X.
     # zeros, X.T @ Y and ones all fail this, so it cannot be satisfied by accident.
     assert np.allclose(X.T @ (Y - X @ Beta), 0.0, atol=1e-8)
+
+
+class _DelayRecorder:
+    """Wraps the event vector u and records which shifts the FIR loop
+    subtracts, so a test can observe exactly which delays were searched
+    without modifying the function under test."""
+
+    def __init__(self, u):
+        self.u = np.asarray(u)
+        self.searched = []
+
+    def __sub__(self, shift):
+        self.searched.append(int(shift))
+        return self.u - shift
+
+
+def test_fir_searches_within_requested_window():
+    """FIR/sFIR must search only delays inside the user's
+    [min_onset_search, max_onset_search] window. Before the lag-recompute
+    fix the loop shifted by the counter 1..nlag, so it drifted outside the
+    window (e.g. searching 1s and 2s when 6-8s was requested). Several
+    (TR, window) cases are checked because the drift is masked for some
+    combinations and only visible for others."""
+    cases = [(2.0, 4, 8), (1.0, 6, 8), (1.5, 4, 8), (3.0, 6, 10)]
+
+    for TR, min_onset, max_onset in cases:
+        dt = TR / 1  # FIR resets T to 1, so dt = TR
+        lag = np.arange(
+            np.trunc(min_onset / dt),
+            np.trunc(max_onset / dt) + 1,
+            dtype=int,
+        )
+        # event indices large enough that u - i_lag stays positive,
+        # so the fitting path is actually exercised
+        u = _DelayRecorder(np.array([20, 55, 90, 120]))
+        para = {
+            "estimation": "FIR",
+            "TR": TR,
+            "AR_lag": 1,
+            "len": 24,
+            "lag": lag,
+        }
+        smooth_fir.FIR_estimation_HRF(u, np.linspace(-1, 1, 152), para, 152)
+
+        for shift in u.searched:
+            d = shift * TR
+            assert min_onset - dt <= d <= max_onset, (
+                f"TR={TR} [{min_onset}, {max_onset}]: "
+                f"FIR searched {d}s, outside the requested window"
+            )

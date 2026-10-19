@@ -87,7 +87,7 @@ class InputWindow:
                     self.file_type = ()
 
             try:
-                inputFileLabel.configure(text=self.input_file.split("/")[-1])
+                inputFileLabel.configure(text=os.path.basename(self.input_file))
             except Exception:
                 inputFileLabel.configure(text="")
 
@@ -107,7 +107,7 @@ class InputWindow:
         def getMaskFile():
             self.mask_file = ask_image_filename("Mask File Path")
             try:
-                maskFileLabel.configure(text=self.mask_file.split("/")[-1])
+                maskFileLabel.configure(text=os.path.basename(self.mask_file))
             except Exception:
                 maskFileLabel.configure(text="")
 
@@ -115,7 +115,8 @@ class InputWindow:
             self.output_dir = filedialog.askdirectory(initialdir=os.getcwd())
             try:
                 outputPathLabel.configure(
-                    text="Output path: " + self.output_dir.split("/")[-1]
+                    text="Output path: "
+                    + os.path.basename(self.output_dir.rstrip("/\\"))
                 )
             except Exception:
                 outputPathLabel.configure(text="")

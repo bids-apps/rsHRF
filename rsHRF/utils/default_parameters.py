@@ -37,7 +37,7 @@ default_parameters["thr"] = 1
 default_parameters["order"] = 3
 
 # Volterra expansion is disabled by default.
-default_parameters["volterra"] = 0
+default_parameters["Volterra"] = 0
 
 # HRF duration in seconds.
 default_parameters["len"] = 24
@@ -56,5 +56,9 @@ default_parameters["lag"] = np.arange(
     0,
     dtype="int",
 )
+
+default_parameters["deconv_maxiter"] = 50
+default_parameters["deconv_tol"] = 1e-4
+default_parameters["deconv_mode"] = "rest"
 
 available_estimations = ["canon2dd", "sFIR", "FIR", "fourier", "hanning", "gamma"]

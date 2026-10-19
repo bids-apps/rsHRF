@@ -48,14 +48,17 @@ https://bids-apps.neuroimaging.io/rsHRF/
 - Asier Erramuzpe (Python - BIDS)
 - Amogh Johri   (Python - BIDS)
 
+- Demir Ege Ortaç (Python)
+- Giulio Tani Raffaelli (Python)
+
 ## Docker Usage
 
 You can run rsHRF as a containerized BIDS App using Docker. This avoids the need to install Python dependencies locally and ensures reproducibility.
 
-### 1. Pull the current development image:
+### 1. Pull the Docker image:
 
 ```bash
-docker pull bids/rshrf:unstable
+docker pull bids/rshrf:latest
 ```
 
 ### 2. Run the analysis:
@@ -66,7 +69,7 @@ To run the analysis on a BIDS derivative dataset, such as an fMRIPrep derivative
 docker run -ti --rm \
   -v /path/to/your/bids_derivative_dataset:/data:ro \
   -v /path/to/your/output_dir:/out \
-  bids/rshrf:unstable \
+  bids/rshrf:latest \
   /data \
   /out \
   participant \
@@ -74,6 +77,8 @@ docker run -ti --rm \
   -m BIDS \
   --estimation canon2dd
 ```
+
+For reproducible analyses pin a version tag such as `bids/rshrf:v1.8.0`.
 
 Here, `/data` should point to the BIDS derivative dataset containing files such as `dataset_description.json`, preprocessed BOLD images, and brain masks. The participant label should be provided without the `sub-` prefix.
 

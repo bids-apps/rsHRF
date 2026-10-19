@@ -3,10 +3,6 @@ import numpy as np
 from scipy.stats import gamma
 from rsHRF import canon, spm_dep, sFIR
 
-import warnings
-
-warnings.filterwarnings("ignore")
-
 """
 BASIS FUNCTION COMPUTATION
 """
@@ -38,7 +34,7 @@ def canon2dd_bf(data_shape, para):
     Returns canon basis functions
     """
     N, nvar = data_shape
-    bf = canon.canon_hrf2dd.wgr_spm_get_canonhrf(para)
+    bf = canon.canon_hrf2dd.spm_get_canonhrf(para)
     if "Volterra" in para:
         if para["Volterra"] == 2:
             bf2 = np.einsum("i...,j...->ij...", bf.T, bf.T).reshape(-1, bf.shape[0]).T

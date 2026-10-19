@@ -1,4 +1,5 @@
-# Unreleased
+# rsHRF 1.8.0
+## 20th October, 2026
 
 * `[Fixed]` `write_derivative_description` raised `KeyError` when `RSHRF_DOCKER_TAG` was set, and wrote
   `"URI": null` when `RSHRF_SINGULARITY_URL` was set. Both branches now read the variable they gate on.
@@ -7,6 +8,136 @@
 * `[Fixed]` the `linalg.solve` fallbacks in `sFIR/smooth_fir.py` assigned `lstsq`'s 4-tuple
   rather than its solution, so they raised `ValueError` instead of falling back.
 * `[Fixed]` the `--temporal-mask` parser now rejects files containing anything other than 0s, 1s and separators, instead of silently dropping the bad characters and building a wrong-length mask.
+* `[Changed]` removed the unused `mpld3` import and the unused `duecredit` dependency.
+* `[Fixed]` the repository URL in `__about__.py` (`BIDSapps` -> `BIDS-Apps`).
+* `[Fixed]` file paths are now parsed with `os.path.basename` instead of `split("/")`, so filename and subject-ID extraction works on Windows.
+* `[Fixed]` the "No Events Detected!" check now looks at the events of the voxel being plotted (`event_bold[pos]`) instead of the size of the whole `event_bold` array, which was almost always non-zero. Also guards against `pos` overflowing when no voxel has an HRF.
+* `[Fixed]` the BIDS processing loop now catches `Exception` instead of a bare `except:`, so `KeyboardInterrupt` (Ctrl+C) and `SystemExit` are no longer swallowed while iterating over input-mask pairs.
+* `[Fixed]` the GIfTI mask/input dimension check compared the input to itself (`v` vs `v`) so it never detected a mismatch; it now compares the input against the mask (`v1` vs `v`), like the NIfTI branch.
+* `[Fixed]` `test_gnii` now derives `localK` from `TR` the same way `CLI.py` does, so the test matches the runtime behaviour introduced in #37 instead of comparing against the raw `None` default.
+* `[Changed]` Replaced deprecated `numpy.matlib.repmat` with `numpy.tile` in `rest_filter.py`; `numpy.matlib` is deprecated and the two produce identical output for the scalar-mean broadcast used here.
+* `[Fixed]` FIR/sFIR estimation now recomputes the lag range after `T` is reset to 1, and the search loop iterates over the lag values instead of the loop counter, so it searches delays within the requested `[min_onset_search, max_onset_search]` window instead of drifting outside it.
+* `[Fixed]` `wgr_get_parameters` read the response height one sample too early when the peak sits at the end of a plateau: the plateau walk-back assigned `hdrf[cnt - 1]` where MATLAB's `rsHRF_get_HRF_parameters.m` uses `hdrf(cnt)`, i.e. `hdrf[cnt]` zero-based. Only the height map was affected; time-to-peak and FWHM were already correct.
+* `[Fixed]` The GUI's FIR/sFIR path never reset `T` to 1 or recomputed the lag range, because `Core.retrieveHRF` calls `compute_hrf` directly instead of going through `fourD_rsHRF`. With the default `T = 3` it searched delays three times outside the requested window — 12-24s for the default `[4, 8]` request. Both paths now call `apply_fir_microtime_grid`, so the fix from #45 can no longer apply to one caller and not the other.
+* `[Fixed]` `knee_pt` passed `knee_pt_helper`'s nan sentinel straight into an index expression, so bad input (an empty array, a 2D array, or anything that is not an ndarray) printed the helper's own diagnostic and then raised `ValueError`, `IndexError` or `TypeError` depending on the case — the useful message was buried under a NumPy internal one. The sentinel is now returned to the caller unchanged, which is what MATLAB's `knee_pt` does by raising `error()` at the same point.
+* `[Fixed]` The `localK` derivation was duplicated in two places in `CLI.py` and missing entirely from the GUI, where `default_parameters["localK"]` is `None` and `Parameters` passes it straight through — so a GUI FIR/sFIR run raised `TypeError` on `1 + None` inside `wgr_BOLD_event_vector`. Both CLI sites and `Core.retrieveHRF` now call `utils.hrf_estimation.apply_localK_default`, which derives it from `TR` and leaves a user-supplied value untouched.
+* `[Fixed]` `wgr_BOLD_event_vector` converted the 0/1 temporal mask into indices in place, leaving `0` at every dropped position, so each scrubbed frame entered the mean and standard deviation as `matrix[0]` instead of being excluded, and the resulting scale error changed which frames were detected as events. The conversion also wrote through to the caller's list, which `compute_hrf` shares across every voxel. Both are gone: the mask is now read with boolean indexing, the direct equivalent of MATLAB's `matrix(temporal_mask)`. Only runs that pass `--temporal-mask` are affected, and for those the detected events change.
+* `[Fixed]` `estimate_hrf` assumed `para["thr"]` was a scalar, but the GUI's `set_thr` wraps it in a list for FIR/sFIR even when the user types a single number, so `np.array([para["thr"], np.inf])` built a ragged array and raised `ValueError`. Because `main.py` pushes the whole parameter form back through `set_parameters` on every update, this hit any GUI FIR/sFIR run once the user applied parameters, not just comma-separated input. Both branches now use `np.atleast_1d`, which accepts the scalar from the CLI and the list from the GUI; the CLI path is unchanged.
+* `[Fixed]` The Wiener deconvolution read `deconv_MaxIter`, `deconv_Tol` and `deconv_mode` from `para`, but nothing ever set them and there were no CLI arguments, so `.get` always fell back to its hardcoded default and the parameters were unreachable. They are now exposed as `--deconv-maxiter`, `--deconv-tol` and `--deconv-mode`, with the defaults moved into `default_parameters`. Behaviour is unchanged at the defaults. Note that MATLAB's `rsHRF_deconv_job` passes `MaxIter = 10` while Python's default is 50.
+* `[Fixed]` When no mask or atlas was supplied, the generated brain mask was built by
+  flattening the volume in C order (`data.reshape(-1, data.shape[3])`), while the data it
+  indexes is flattened in Fortran order a few lines below. `voxel_ind` therefore pointed at
+  different voxels than the ones that were extracted and written back, so the variance
+  criterion selected the wrong set: some zero-variance voxels were analysed and some real
+  ones were skipped. The mask branch was already consistent, because `spm_read_vols`
+  flattens in Fortran order. Only runs without a mask or atlas are affected, and for those
+  the set of analysed voxels changes.
+* `[Fixed]` `rest_IdealFilter` restored the mean of the filtered signal with
+`np.mean(x1)`, which takes no axis and therefore returns a single value for the whole
+chunk, where MATLAB's `repmat(mean(x1,1), size(x1,1), 1)` restores each column's own
+mean. Behaviour is unchanged on every current call path — the CLI, the GUI and the
+consistency test all z-score the data before filtering, so the column means are already
+zero — but the function now matches MATLAB for callers that pass unstandardised data.
+Also drops the `np.tile`, since broadcasting the `(1, n)` mean avoids materialising a
+full-size intermediate array.
+* `[Fixed]` The FIR/sFIR path did not append the selected lag to `beta_hrf`, although
+MATLAB's `rsHRF_estimation_FIR.m` does and so does the basis path in `wgr_hrf_fit`, so
+the delay chosen for each voxel was discarded and could only be recovered by
+instrumenting `knee_pt`. It is now appended, and the slices that consume `beta_hrf` drop
+two trailing rows instead of one. This also fixes a separate bug in the GUI, where the
+FIR branch passed `beta_hrf` through untouched and therefore treated the regression
+intercept as part of the HRF.
+* `[Fixed]` The non-Wiener branch of `process_voxel_deconv` returned the raw output of
+  `np.fft.ifft`, which is complex, so assigning it into the real `data_deconv` array
+  discarded the imaginary part implicitly and raised a `ComplexWarning` on every run. The
+  signal and the HRF are both real, so the filtered spectrum is Hermitian and the inverse
+  transform is real up to floating-point error — the numerical output is unchanged. The
+  branch now returns `np.real(...)`, matching the Wiener branch and MATLAB, which takes
+  `real()` at every `ifft`.
+* `[Fixed]` The GUI applied the FIR/sFIR microtime correction to a local dictionary but
+  stored the uncorrected `Parameters` object on the HRF, so every later consumer read
+  `T = 3` for an HRF that was estimated at `T = 1`. `deconvolveHRF` therefore resampled an
+  HRF that was already at TR resolution by a further factor of `T`, and `getHRFParameters`
+  computed response height, time-to-peak and FWHM against a `dt` three times too small.
+  The corrected parameters now travel with the HRF, which fixes both consumers. The shared
+  parameter form is left untouched, so switching back to a basis set still uses `T = 3`.
+* `[Fixed]` The BIDS loop extracted the file extension with `split("bold")[1]`, which takes
+  the text after the *first* occurrence of "bold". Any path with an earlier "bold", for example a
+  participant label like `sub-bold01`, or a parent directory named `bold` returned a path
+  fragment instead of an extension, so the file fell through to the GIfTI branch and was
+  counted as an error. It now splits on the last occurrence.
+* `[Fixed]` `__all__` in `rsHRF/__init__.py` listed `"fourD_rsHRF.py"` and `"CLI.py"` with
+  their file extensions, so `from rsHRF import *` raised `AttributeError`; `__all__` takes
+  module names, not filenames. `utils`, `basis_functions` and `iterative_wiener_deconv` are
+  now imported explicitly as well, because they were only reachable as a side effect of other
+  modules importing them, so `__all__` would have broken again if those imports changed.
+* `[Fixed]` `deconvolveHRF` looked its cache entry up with the shared parameter form but
+  stored it with the HRF's own parameters, so once the two diverged the check never matched.
+  Since `add_BOLD_deconv` appends, deconvolving the same HRF twice added a duplicate entry
+  to the data store instead of returning "Time series already exists", and recomputed the
+  per-voxel deconvolution. `TR` and the deconvolution passband were also read from the form
+  rather than the HRF. All four now come from the HRF, so the lookup and the stored key match.
+* `[Changed]` CI now uses the up-to-date `cimg/python:3.9` image. The legacy `circleci/*`
+  convenience images were retired at the end of 2021 and CircleCI raises a deprecation
+  warning for them; the Python version is unchanged.
+* `[Changed]` The expected numerical warnings in `knee_pt_helper` and `spm_hrf` are now
+  covered by `np.errstate` instead of being emitted on every call. In `knee_pt_helper` the
+  first element of `det` is always zero, because a line cannot be fitted through the single
+  point of the first cumulative sum, and that element is never read. In `spm_hrf` the
+  logarithm receives a negative argument when the onset is shifted to build the time
+  derivative, which `np.nan_to_num` already handles. Together these accounted for four
+  warnings per voxel, so a real run emitted hundreds of thousands of them once the blanket
+  suppression is removed. The `knee_pt` flat-curve warning is deliberately left in place.
+* `[Fixed]` A supplied mask that is looser than the data let voxels with a flat time course
+  into the analysis, the case reported in #29, where an earlier preprocessing step had
+  masked more tightly than rsHRF does. Those voxels carry no signal, and dividing by their
+  all-zero HRF wrote `nan` into the deconvolved output, while the parameter maps were
+  already zero for them. `voxel_ind` now requires non-zero temporal variance as well as mask
+  membership, which is what the generated-mask branch has always done. Measured on synthetic
+  data: the `nan` count in the deconvolved output goes from 3660 to 0, and every value for
+  voxels that carry signal is unchanged.
+* `[Changed]` Removed the blanket `warnings.filterwarnings("ignore")` from all ten modules
+  that set it, and the `-p no:warnings` flag from the CI test run -the policy asked about
+  in #29-. The warnings that this exposed were dealt with at the source first: the structural
+  ones in `knee_pt_helper` and `spm_hrf` are now covered by `np.errstate`, and voxels with a
+  flat time course no longer enter the analysis.What remains visible is
+  deliberate: the "Empty or zero time course" warning, the flat-curve warning in `knee_pt`,
+  and warnings from dependencies. Voxels excluded for having a flat time course are now reported
+  once per run, with a count and the likely cause, instead of warning per voxel.
+* `[Fixed]` The BIDS input check required `DataType` in `dataset_description.json`, but the
+  BIDS key is `DatasetType`, which is also what `utils/bids.py` writes, so rsHRF rejected
+  spec-compliant derivative datasets, including its own output. Fixed by @anaharrismatnez in
+  #52; the test fixtures were writing the same wrong key, which is why this went unnoticed.
+  `DataType` is still accepted with a warning, since it is the convention older fMRIPrep
+  versions wrote and real derivatives in use still carry it; the dataset the integration
+  test runs on is one of them.
+* `[Fixed]` The text-input path had no equivalent of `voxel_ind`, so a constant column was
+  analysed like any other: it warned four times per column and wrote `nan` into
+  `data_deconv`. Constant columns are now excluded, reported once per run with a count, and
+  the saved arrays are expanded back to the input width so the columns still line up with
+  the input file.
+* `[Changed]` `estimate_hrf` appended `np.inf` to `thr` in the FIR/sFIR branch, but only
+  `thr[0]` was read. Both that and the docstring of `wgr_BOLD_event_vector`, which
+  described an `event < 3.1` upper bound, trace back to a line that is commented out in
+  MATLAB's `rsHRF_find_event_vector.m`. The upper bound was never implemented in Python;
+  the docstring now outlines what the function does, which is to detect local peaks above
+  the threshold, the same condition MATLAB implements.
+* `[Fixed]` In the BIDS branch, `write_derivative_description` ran prior to the initialization
+  of the output directory. Consequently, a non-existent `--output_dir` caused `FileNotFoundError`.
+  Output directory is now initialized right after the argument verification in `CLI.py`
+  including nested file paths. It was not spotted, because both the CI integration test
+  and unit test fixture create the output directory before the testing.
+* `[Fixed]` The `pybids` version constraint in `requirements.txt` kept the shell quotes
+  (`pybids>"0.11.0, <0.21.0"`), which is not valid PEP 508. pip removed support for
+  legacy specifiers in 24.1, so `pip install -r requirements.txt` fails outright on any
+  newer pip. `setup.py` was already correct.
+* `[Fixed]` Two docstrings in `utils/hrf_estimation.py` were outdated by the `wgr_`
+  removal in #70. `apply_localK_default` used the old Python name, and `glm_estimation`
+  pointed at `wgr_onset_design` instead of `wgr_glm_estimation`.
+* `[Changed]` The Docker section of the README pointed at `bids/rshrf:unstable` and called it
+  the development image. The release pipeline pushes `unstable`, `latest` and the version tag
+  from the same build, so `unstable` was never a development image. The README now uses
+  `latest` and notes that a version tag should be pinned for reproducible analyses.
 
 # rsHRF 1.5.8
 ## 12th September, 2021

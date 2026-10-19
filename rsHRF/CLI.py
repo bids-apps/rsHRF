@@ -3,16 +3,18 @@ import numpy as np
 import os.path as op
 import json
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
+import bids
 from bids.layout import BIDSLayout
 from bids.config import set_option
 from pathlib import Path
 from rsHRF import spm_dep, fourD_rsHRF, utils
-
+from packaging.version import Version
 
 import warnings
 from .utils.default_parameters import default_parameters, available_estimations
 
-set_option("extension_initial_dot", True)
+if Version(bids.__version__) < Version("0.14"):
+    set_option("extension_initial_dot", True)
 
 with open(op.join(op.dirname(op.realpath(__file__)), "VERSION"), "r") as fh:
     __version__ = fh.read().strip("\n")
@@ -155,6 +157,31 @@ def get_parser():
         help=(
             "Temporal band-pass filter for the BOLD signal, given as LOW_FREQ "
             "HIGH_FREQ in Hz. Default: 0.01 0.08."
+        ),
+    )
+
+    group_para.add_argument(
+        "--deconv-maxiter",
+        type=int,
+        default=default_parameters["deconv_maxiter"],
+        help=("The upper limit for the deconvolution iterations."),
+    )
+    group_para.add_argument(
+        "--deconv-tol",
+        type=float,
+        default=default_parameters["deconv_tol"],
+        help=(
+            "Convergence tolerance. Iteration stops once the relative difference between two successive estimates falls below this value. Default: 1e-4"
+        ),
+    )
+    group_para.add_argument(
+        "--deconv-mode",
+        choices=["rest", "task"],
+        default=default_parameters["deconv_mode"],
+        help=(
+            'Preset for the deconvolution defaults, either "rest" or "task". It only '
+            "selects the smoothing width and low-pass cutoff: rest uses a wider kernel "
+            "and a lower cutoff, task a narrower kernel and a higher one. Default: rest."
         ),
     )
 
@@ -342,6 +369,8 @@ def run_rsHRF():
             parser.error(
                 "--output_dir is required when executing in command-line interface"
             )
+        output_dir = Path(args.output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
 
         if not op.exists(args.bids_dir):
             parser.error(
@@ -448,11 +477,7 @@ def run_rsHRF():
                 dtype="int",
             )
 
-            if "localK" not in para or para["localK"] == None:
-                if para["TR"] <= 2:
-                    para["localK"] = 1
-                else:
-                    para["localK"] = 2
+            utils.hrf_estimation.apply_localK_default(para)
 
             if input_type == "text":
                 file_type = op.splitext(args.bids_dir)[-1]
@@ -500,19 +525,25 @@ def run_rsHRF():
 
             if fname.exists():
                 desc = json.loads(Path(fname).read_text())
-                if "DataType" in desc:
-                    if desc["DataType"] != "derivative":
-                        parser.error(
-                            "Input data is not a derivative dataset"
-                            ' (DataType in dataset_description.json is not equal to "derivative")'
-                        )
-
+                if "DatasetType" in desc:
+                    data_type = desc["DatasetType"]
+                elif "DataType" in desc:
+                    warnings.warn(
+                        "DataType field is an old fMRIPrep naming convention please use 'DatasetType'",
+                        category=RuntimeWarning,
+                    )
+                    data_type = desc["DataType"]
                 else:
                     parser.error(
-                        "DataType is not defined in the dataset_description.json file. Please make sure DataType is defined. "
+                        "DatasetType is not defined in the dataset_description.json file. Please make sure DatasetType is defined. "
                         "Information on the dataset_description.json file can be found online "
                         "(https://bids-specification.readthedocs.io/en/stable/03-modality-agnostic-files.html"
                         "#derived-dataset-and-pipeline-description)"
+                    )
+                if data_type != "derivative":
+                    parser.error(
+                        "Input data is not a derivative dataset"
+                        ' (DatasetType in dataset_description.json is not equal to "derivative")'
                     )
             else:
                 parser.error(
@@ -628,8 +659,8 @@ def run_rsHRF():
 
                 prefix_match_count = 0
                 for i in range(len(all_inputs)):
-                    input_prefix = all_inputs[i].split("/")[-1].split("_desc")[0]
-                    mask_prefix = all_masks[i].split("/")[-1].split("_desc")[0]
+                    input_prefix = op.basename(all_inputs[i]).split("_desc")[0]
+                    mask_prefix = op.basename(all_masks[i]).split("_desc")[0]
                     if input_prefix == mask_prefix:
                         prefix_match_count += 1
                     else:
@@ -646,7 +677,7 @@ def run_rsHRF():
 
             num_errors = 0
             for file_count in range(len(all_inputs)):
-                file_type = all_inputs[file_count].split("bold")[1]
+                file_type = all_inputs[file_count].rsplit("bold", 1)[-1]
                 if file_type == ".nii" or file_type == ".nii.gz":
                     try:
                         TR = layout.get_metadata(all_inputs[file_count])[
@@ -673,11 +704,7 @@ def run_rsHRF():
                     dtype="int",
                 )
 
-                if "localK" not in para or para["localK"] == None:
-                    if para["TR"] <= 2:
-                        para["localK"] = 1
-                    else:
-                        para["localK"] = 2
+                utils.hrf_estimation.apply_localK_default(para)
 
                 num_errors += 1
                 try:
@@ -695,7 +722,7 @@ def run_rsHRF():
                     num_errors -= 1
                 except ValueError as err:
                     print(err.args[0])
-                except:
+                except Exception:
                     print("Unexpected error:", sys.exc_info()[0])
             success = len(all_inputs) - num_errors
             if success == 0:

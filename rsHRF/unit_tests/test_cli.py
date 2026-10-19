@@ -252,6 +252,9 @@ def test_gnii(monkeypatch, tmp_path):
                         "max_onset_search",
                         "localK",
                         "wiener",
+                        "deconv_maxiter",
+                        "deconv_tol",
+                        "deconv_mode",
                     ]
                 }
                 para["temporal_mask"] = None
@@ -262,6 +265,8 @@ def test_gnii(monkeypatch, tmp_path):
                     np.trunc(para["max_onset_search"] / para["dt"]) + 1,
                     dtype="int",
                 )
+                if para["localK"] is None:
+                    para["localK"] = 1 if para["TR"] <= 2 else 2
                 mock_call.assert_called_once()
 
                 call_args = mock_call.call_args
@@ -398,7 +403,7 @@ def test_BIDS(monkeypatch, tmp_path):
     ds = fake_BIDS_dataset(
         tmp_path,
         ["01"],
-        {"DataType": "derivative"},
+        {"DatasetType": "derivative"},
         {
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
@@ -428,7 +433,7 @@ def test_BIDS_failedComp(monkeypatch, tmp_path):
     ds = fake_BIDS_dataset(
         tmp_path,
         ["01"],
-        {"DataType": "derivative"},
+        {"DatasetType": "derivative"},
         {
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
@@ -474,7 +479,7 @@ def test_BIDS_TR(monkeypatch, tmp_path):
     ds = fake_BIDS_dataset(
         tmp_path,
         ["01"],
-        {"DataType": "derivative"},
+        {"DatasetType": "derivative"},
         {
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
@@ -503,7 +508,7 @@ def test_BIDS_nonDerivative(monkeypatch, tmp_path):
     ds = fake_BIDS_dataset(
         tmp_path,
         ["01"],
-        {"DataType": "original"},
+        {"DatasetType": "original"},
         {
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
@@ -582,7 +587,7 @@ def test_BIDS_participantLabels(monkeypatch, tmp_path):
     ds = fake_BIDS_dataset(
         tmp_path,
         ["01"],
-        {"DataType": "derivative"},
+        {"DatasetType": "derivative"},
         {
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
@@ -625,7 +630,7 @@ def test_BIDS_mask(monkeypatch, tmp_path):
     ds = fake_BIDS_dataset(
         tmp_path,
         ["01"],
-        {"DataType": "derivative"},
+        {"DatasetType": "derivative"},
         {
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
@@ -678,7 +683,7 @@ def test_BIDS_mask_bad(monkeypatch, tmp_path):
     ds = fake_BIDS_dataset(
         tmp_path,
         ["01"],
-        {"DataType": "derivative"},
+        {"DatasetType": "derivative"},
         {
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
@@ -751,7 +756,7 @@ def test_BIDS_filters(monkeypatch, tmp_path):
     ds = fake_BIDS_dataset(
         tmp_path,
         ["01"],
-        {"DataType": "derivative"},
+        {"DatasetType": "derivative"},
         {
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
             "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
@@ -848,3 +853,100 @@ def test_temporal_mask_accepts_valid_formats(monkeypatch, tmp_path):
             )
             CLI.run_rsHRF()
             mock_call.assert_called_once()
+
+
+def test_BIDS_bold_in_subject_label(monkeypatch, tmp_path):
+    """A participant label containing "bold" must not break extension parsing."""
+    ds = fake_BIDS_dataset(
+        tmp_path,
+        ["bold01"],
+        {"DatasetType": "derivative"},
+        {
+            "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
+            "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
+                {"TaskName": "Rest", "RepetitionTime": 2}
+            ),
+        },
+    )
+    with mock.patch("rsHRF.fourD_rsHRF.demo_rsHRF") as mock_call:
+        with pytest.warns(Warning):
+            monkeypatch.setattr(
+                sys,
+                "argv",
+                [
+                    "rsHRF",
+                    str(ds / "derivatives" / "fmriprep"),
+                    str(ds / "derivatives" / "rsHRF"),
+                    "participant",
+                    "--TR",
+                    "2",
+                ],
+            )
+            CLI.run_rsHRF()
+            mock_call.assert_called_once()
+
+
+def test_BIDS_accepts_legacy_DataType(monkeypatch, tmp_path):
+    """An old fMRIPrep derivative that writes DataType is still accepted."""
+    ds = fake_BIDS_dataset(
+        tmp_path,
+        ["01"],
+        {"DataType": "derivative"},
+        {
+            "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
+            "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
+                {"TaskName": "Rest", "RepetitionTime": 2}
+            ),
+        },
+    )
+    with mock.patch("rsHRF.fourD_rsHRF.demo_rsHRF") as mock_call:
+        with pytest.warns(RuntimeWarning, match="DataType"):
+            monkeypatch.setattr(
+                sys,
+                "argv",
+                [
+                    "rsHRF",
+                    str(ds / "derivatives" / "fmriprep"),
+                    str(ds / "derivatives" / "rsHRF"),
+                    "participant",
+                    "--TR",
+                    "2",
+                ],
+            )
+            CLI.run_rsHRF()
+            mock_call.assert_called_once()
+
+
+def test_BIDS_creates_missing_output_dir(monkeypatch, tmp_path):
+    """In every other test, fixtures create the output directory before the testing.
+    Consequently, missing output directory initialization was never tested.
+    This test function tests whether the output directory is created if it's missing."""
+    ds = fake_BIDS_dataset(
+        tmp_path,
+        ["01"],
+        {"DatasetType": "derivative"},
+        {
+            "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz": "fake",
+            "sub-{}_task-rest_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json": json.dumps(
+                {"TaskName": "Rest", "RepetitionTime": 2}
+            ),
+        },
+    )
+    out = tmp_path / "new" / "output"
+    with mock.patch("rsHRF.fourD_rsHRF.demo_rsHRF") as mock_call:
+        with pytest.warns(Warning):
+            monkeypatch.setattr(
+                sys,
+                "argv",
+                [
+                    "rsHRF",
+                    str(ds / "derivatives" / "fmriprep"),
+                    str(out),
+                    "participant",
+                    "--TR",
+                    "2",
+                ],
+            )
+            CLI.run_rsHRF()
+            mock_call.assert_called_once()
+            assert out.exists(), "Output directory was not created."
