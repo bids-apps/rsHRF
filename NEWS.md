@@ -1,3 +1,8 @@
+# Unreleased
+
+* `[Changed]` The PyPI version badge now comes from shields.io; the badge.fury.io image
+  was still showing 1.7.0 two days after 1.8.0 was published.
+
 # rsHRF 1.8.0
 ## 20th October, 2026
 
