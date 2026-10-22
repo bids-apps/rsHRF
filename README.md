@@ -1,6 +1,6 @@
 # Resting state HRF estimation and deconvolution
 
-[![PyPI version](https://badge.fury.io/py/rshrf.svg)](https://badge.fury.io/py/rshrf)
+[![PyPI version](https://img.shields.io/pypi/v/rshrf.svg)](https://pypi.org/project/rshrf/)
 
 Please refer to https://github.com/compneuro-da/rsHRF for MATLAB version
 
